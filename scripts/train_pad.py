@@ -12,6 +12,7 @@ import os
 import random
 import sys
 import tempfile
+import time
 from pathlib import Path
 from typing import Any, Iterator
 
@@ -349,7 +350,18 @@ def main() -> int:
         raise RuntimeError(f"This Kaggle run requires 1 or 2 GPU processes; got {world_size}")
     torch.cuda.set_device(local_rank)
     device = torch.device("cuda", local_rank)
+
+    # CRITICAL FOR KAGGLE MULTI-GPU (Tesla T4 x2):
+    # Virtualized cloud environments lack PCIe P2P direct memory access.
+    # Without these environment flags, NCCL deadlocks during init_process_group.
+    os.environ.setdefault("NCCL_P2P_DISABLE", "1")
+    os.environ.setdefault("NCCL_IB_DISABLE", "1")
+
+    if rank == 0:
+        print(f"[DDP] Initializing NCCL process group (world_size={world_size}, local_rank={local_rank})...", flush=True)
     dist.init_process_group(backend="nccl")
+    if rank == 0:
+        print("[DDP] NCCL process group initialized successfully!", flush=True)
     seed_everything(args.seed, rank)
 
     output = args.output_dir.resolve()
@@ -401,11 +413,16 @@ def main() -> int:
         for name, dataset in eval_datasets.items()
     }
 
+    if rank == 0:
+        print("Loading MobileNetV3-Small backbone pretrained weights...", flush=True)
     base_model = models.mobilenet_v3_small(
         weights=models.MobileNet_V3_Small_Weights.IMAGENET1K_V1
     )
     in_features = base_model.classifier[-1].in_features
     base_model.classifier[-1] = nn.Linear(in_features, 1)
+
+    if rank == 0:
+        print("Running Stage 0 (S0) tiny-overfit sanity gate (50 steps on 32 samples)...", flush=True)
     s0_report = run_tiny_overfit(
         base_model,
         dataset_root,
@@ -414,6 +431,11 @@ def main() -> int:
         args.crop_scale,
         args.max_clipped_fraction,
     )
+    if rank == 0:
+        print(
+            f"[✓] S0 tiny-overfit gate PASSED: loss {s0_report['initial_loss']:.4f} -> {s0_report['final_loss']:.4f}",
+            flush=True,
+        )
     trainable_names = set_training_stage(base_model, "head")
     base_model.to(device)
     wrapped = DistributedDataParallel(base_model, device_ids=[local_rank])
@@ -494,7 +516,12 @@ def main() -> int:
         freeze_batchnorm_for_stage(base_model, stage)
         train_loss_sum = 0.0
         train_count = 0
-        for images, targets in train_loader:
+        epoch_start_time = time.time()
+        num_train_batches = len(train_loader)
+        if rank == 0:
+            print(f"\n>>> Epoch {epoch + 1}/{total_epochs} [{stage.upper()} STAGE] (Batches: {num_train_batches})", flush=True)
+
+        for batch_idx, (images, targets) in enumerate(train_loader):
             images = images.to(device, non_blocking=True)
             targets = targets.to(device, non_blocking=True)
             optimizer.zero_grad(set_to_none=True)
@@ -508,8 +535,23 @@ def main() -> int:
             scaler.update()
             train_loss_sum += float(loss.item()) * len(targets)
             train_count += len(targets)
+
+            # Live batch progress on rank 0
+            if rank == 0 and (batch_idx == 0 or (batch_idx + 1) % 25 == 0 or (batch_idx + 1) == num_train_batches):
+                avg_b_loss = train_loss_sum / max(1, train_count)
+                pct = 100.0 * (batch_idx + 1) / num_train_batches
+                elapsed = time.time() - epoch_start_time
+                print(
+                    f"  [Epoch {epoch+1}/{total_epochs}] Step {batch_idx+1:4d}/{num_train_batches} ({pct:5.1f}%) | "
+                    f"Batch Loss: {loss.item():.4f} | Running Avg Loss: {avg_b_loss:.4f} | {elapsed:.0f}s",
+                    flush=True,
+                )
+
         totals = torch.tensor([train_loss_sum, train_count], dtype=torch.float64, device=device)
         dist.all_reduce(totals, op=dist.ReduceOp.SUM)
+
+        if rank == 0:
+            print(f"  [Epoch {epoch+1}/{total_epochs}] Evaluating validation split ({len(eval_loaders['val'])} batches)...", flush=True)
         val_labels, val_scores, val_loss = evaluate(
             wrapped, eval_loaders["val"], device, world_size
         )
@@ -531,6 +573,13 @@ def main() -> int:
         elif stage == "finetune":
             stale_epochs += 1
         if rank == 0:
+            print(
+                f"  [Epoch {epoch+1}/{total_epochs}] Val Results -> Loss: {val_loss:.4f} | "
+                f"AUC: {epoch_result['val_auc']:.4f} | "
+                f"EER (ACER): {selection['acer']*100:.2f}% | "
+                f"APCER: {selection['apcer']*100:.2f}% | BPCER: {selection['bpcer']*100:.2f}%",
+                flush=True,
+            )
             checkpoint = {
                 "epoch": epoch + 1,
                 "stage": stage,
