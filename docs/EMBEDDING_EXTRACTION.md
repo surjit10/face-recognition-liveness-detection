@@ -57,10 +57,15 @@ The audit is non-destructive, marks exact duplicate copies excluded, and leaves 
   --context local \
   --mode audit \
   --pack buffalo_m \
+  --retry-padding-ratios 0.25 0.50 \
   --providers CPUExecutionProvider \
   --acknowledge-non-commercial-model-terms
 ```
 
 This command refuses to run while local processing permission is unresolved, if the model directory is incomplete, if providers are unavailable, or if outputs already exist. `--mode audit` produces candidate embeddings only; it is not a final enrollment gallery.
+
+The optional padding retries apply only after an unchanged source crop returns `no_face`. They center the existing pixels on a channel-median canvas; they do not recrop, synthesize missing facial detail, lower the detector threshold, or choose one face from a multi-face image. The metadata records every attempted variant, the selected padding and the final bounding box in original-image coordinates. Keep `frad_embedding_metadata.csv` and `embedding_extraction.json` with the NPZ so rejected and recovered samples remain auditable.
+
+Embedding every image with the frozen pretrained ArcFace model is inference, not training, and does not itself leak the recognition test set. Gallery enrollment, validation probes/impostors and untouched test probes/impostors must still be assigned through separate frozen manifests before threshold calibration or evaluation.
 
 For Kaggle, follow `docs/KAGGLE_EMBEDDING_RUNBOOK.md` and keep the session/input/output private.

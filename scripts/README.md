@@ -6,4 +6,5 @@ Scripts provide small CLI wrappers around importable `src/faceguard/` functions.
 - `audit_data.py`: non-destructive dataset inventory and draft subject manifest.
 - `inspect_model_pack.py`: local ONNX file sizes/hashes without loading or downloading.
 - `extract_gallery.py`: permission/model-hash/provider-gated private embedding extraction.
+- `prepare_recognition_context.py`: bounded-CPU, non-destructive loose context crops from original recognition photos, with full-frame fallbacks and an auditable manifest.
 - `build_kaggle_bundle.py`: code-only allowlisted ZIP; excludes data, models, reports and reference material.

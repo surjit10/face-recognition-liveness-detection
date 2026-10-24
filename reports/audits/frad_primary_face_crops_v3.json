@@ -1,0 +1,47 @@
+{
+  "content_multiset_sha256": "c3581fb05afe7b21ff88cc9ad87e2dc1b7b43b413f259a9ae824d2131b1a3cf5",
+  "created_at": "2026-10-24T17:43:35.007000+00:00",
+  "detector": "OpenCV YuNet context-crop proposal only",
+  "detector_model_sha256": "8f2383e4dd3cfbb4553ea8718107fc0423210dc964f9f4280604804ed2552fa4",
+  "input_root_name": "original",
+  "limitations": [
+    "The YuNet result proposes a context crop; it is not final SCRFD validation.",
+    "Multiple-face inputs select the largest detected box and require manual identity review.",
+    "No-face inputs are retained as full-frame fallbacks.",
+    "ArcFace extraction must still reject images that fail its single-face gate.",
+    "Original source files were not modified or deleted."
+  ],
+  "manifest_sha256": "1948c6106e3680511fb0f0b6d9e450e76861d175c57c89c698eff3acf843fb2d",
+  "opencv_threads_per_worker": 1,
+  "output_root_name": "frad_primary_face_crops_v3",
+  "output_samples": 2804,
+  "privacy": "restricted biometric; do not publish",
+  "schema_version": 1,
+  "settings": {
+    "crop_factor": 2.0,
+    "crop_size": 768,
+    "detector_max_side": 960,
+    "fallback_max_side": 1600,
+    "jpeg_quality": 95,
+    "multiple_crop_factors": [
+      2.0,
+      1.8,
+      1.6,
+      1.5,
+      1.4,
+      1.3
+    ],
+    "multiple_face_policy": "largest",
+    "nms_threshold": 0.3,
+    "score_threshold": 0.6,
+    "top_k": 5000
+  },
+  "source_samples": 2804,
+  "source_subject_folders": 234,
+  "status_counts": {
+    "context_crop_largest_of_multiple": 176,
+    "context_crop_largest_of_multiple_review": 113,
+    "context_crop_single_face": 2515
+  },
+  "workers": 1
+}

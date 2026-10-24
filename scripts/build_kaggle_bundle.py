@@ -16,6 +16,7 @@ ALLOWED_FILES = (
     "requirements-kaggle.in",
     "configs/decisions.yaml",
     "notebooks/02_kaggle_frad_embeddings.ipynb",
+    "notebooks/03_kaggle_pad_training.ipynb",
 )
 ALLOWED_TREES = ("src", "scripts")
 FORBIDDEN_SUFFIXES = {

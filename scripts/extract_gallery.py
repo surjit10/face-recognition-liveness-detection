@@ -27,6 +27,17 @@ def main() -> int:
     parser.add_argument("--mode", choices=("audit", "enrollment"), default="audit")
     parser.add_argument("--pack", default="buffalo_m")
     parser.add_argument(
+        "--retry-padding-ratios",
+        nargs="*",
+        type=float,
+        default=[],
+        metavar="RATIO",
+        help=(
+            "For no-face results only, retry after centering the unchanged image on "
+            "a neutral canvas with this fraction of width/height added per side."
+        ),
+    )
+    parser.add_argument(
         "--providers",
         nargs="+",
         default=["CPUExecutionProvider"],
@@ -56,6 +67,7 @@ def main() -> int:
             mode=args.mode,
             providers=tuple(args.providers),
             pack=args.pack,
+            retry_padding_ratios=tuple(args.retry_padding_ratios),
             overwrite=args.overwrite,
         )
     except (ConfigurationError, ExtractionError, ModelPackError) as exc:
