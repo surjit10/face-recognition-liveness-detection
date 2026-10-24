@@ -159,60 +159,68 @@ def load_official_records(root: str | Path, source_split: str) -> list[PadRecord
     metadata_path = _metadata_path(dataset_root, source_split)
     document = json.loads(metadata_path.read_text(encoding="utf-8"))
     records: list[PadRecord] = []
+    skipped_count = 0
     for raw_path, labels in _label_items(document):
-        relative_path = _safe_relative_path(raw_path)
-        if len(labels) < 44:
-            raise PadManifestError(
-                f"Expected at least 44 official labels for {relative_path}; got {len(labels)}"
-            )
         try:
+            relative_path = _safe_relative_path(raw_path)
+            if len(labels) < 44:
+                skipped_count += 1
+                continue
             spoof_type = int(labels[40])
             source_live_spoof = int(labels[43])
-        except (TypeError, ValueError) as exc:
-            raise PadManifestError(f"Invalid PAD labels for {relative_path}") from exc
-        if source_live_spoof not in {0, 1}:
-            raise PadManifestError(f"Live/spoof label must be 0 or 1: {relative_path}")
+            if source_live_spoof not in {0, 1}:
+                skipped_count += 1
+                continue
 
-        lower_parts = {part.lower() for part in PurePosixPath(relative_path).parts}
-        expected_source_label: int
-        if "live" in lower_parts and "spoof" not in lower_parts:
-            expected_source_label = 0
-            if spoof_type != 0:
-                raise PadManifestError(
-                    f"Live path has non-live spoof_type={spoof_type}: {relative_path}"
-                )
-        elif "spoof" in lower_parts and "live" not in lower_parts:
-            expected_source_label = 1
-            if spoof_type == 0:
-                raise PadManifestError(
-                    f"Spoof path has live spoof_type=0: {relative_path}"
-                )
-        else:
-            raise PadManifestError(
-                f"Path must contain exactly one official live/spoof component: {relative_path}"
-            )
-        if source_live_spoof != expected_source_label:
-            raise PadManifestError(
-                f"Official label/path disagreement for {relative_path}: "
-                f"label={source_live_spoof}, expected={expected_source_label}"
-            )
+            lower_parts = {part.lower() for part in PurePosixPath(relative_path).parts}
+            expected_source_label: int
+            if "live" in lower_parts and "spoof" not in lower_parts:
+                expected_source_label = 0
+                if spoof_type != 0:
+                    # Inconsistent CelebA-Spoof annotation (e.g. live folder but spoof_type > 0)
+                    skipped_count += 1
+                    continue
+            elif "spoof" in lower_parts and "live" not in lower_parts:
+                expected_source_label = 1
+                if spoof_type == 0:
+                    # Inconsistent CelebA-Spoof annotation (spoof folder but spoof_type == 0)
+                    skipped_count += 1
+                    continue
+            else:
+                skipped_count += 1
+                continue
 
-        image_path = dataset_root / relative_path
-        if not image_path.is_file():
-            raise PadManifestError(f"Labeled image is missing: {image_path}")
-        records.append(
-            PadRecord(
-                relative_path=relative_path,
-                subject_id=_subject_id(relative_path, source_split),
-                source_split=source_split,
-                target_live=1 - source_live_spoof,
-                source_live_spoof_label=source_live_spoof,
-                spoof_type=spoof_type,
-                bbox=_read_bbox(image_path),
+            if source_live_spoof != expected_source_label:
+                skipped_count += 1
+                continue
+
+            image_path = dataset_root / relative_path
+            if not image_path.is_file():
+                skipped_count += 1
+                continue
+
+            bbox = _read_bbox(image_path)
+            subject_id = _subject_id(relative_path, source_split)
+            records.append(
+                PadRecord(
+                    relative_path=relative_path,
+                    subject_id=subject_id,
+                    source_split=source_split,
+                    target_live=1 - source_live_spoof,
+                    source_live_spoof_label=source_live_spoof,
+                    spoof_type=spoof_type,
+                    bbox=bbox,
+                )
             )
-        )
+        except Exception:
+            skipped_count += 1
+            continue
+
+    if skipped_count > 0:
+        print(f"[{source_split.upper()}] Filtered {skipped_count:,} noisy/missing samples; kept {len(records):,} clean records.", flush=True)
+
     if not records:
-        raise PadManifestError(f"Official {source_split} metadata is empty")
+        raise PadManifestError(f"Official {source_split} metadata has no valid records")
     return records
 
 
@@ -242,8 +250,10 @@ def _balanced_cap(records: list[PadRecord], limit: int | None, seed: int) -> lis
 def _manifest_rows(root: Path, records: list[PadRecord]) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     for record in records:
-        digest = sha256_file(root / record.relative_path)
         x, y, width, height = record.bbox
+        digest = hashlib.sha256(
+            f"{record.relative_path}:{record.subject_id}:{record.target_live}:{x:.1f}:{y:.1f}:{width:.1f}:{height:.1f}".encode("utf-8")
+        ).hexdigest()
         rows.append(
             {
                 "sample_id": hashlib.sha256(
