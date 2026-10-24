@@ -1,4 +1,4 @@
-"""Generate notebooks/03_kaggle_pad_training.ipynb cleanly."""
+"""Generate notebooks/03_kaggle_pad_training.ipynb with live tqdm status bars."""
 import json
 from pathlib import Path
 
@@ -24,6 +24,7 @@ cells = [
             "   - *(Optional)* You can also attach your `frad-legacy-crops` dataset for extra genuine faces!\n",
             "3. **Run All:**\n",
             "   - Click **Run All** (or `Shift + Enter` cell by cell).\n",
+            "   - Interactive **live progress bars (`tqdm`)** will display ETA, batches, loss, and accuracy in real time!\n",
             "   - In ~3-5 minutes, your trained `mobilenetv3_pad.onnx` will be ready under `/kaggle/working/faceguard/pad/`!\n"
         ]
     },
@@ -43,13 +44,14 @@ cells = [
             "import torch.nn as nn\n",
             "from torch.utils.data import DataLoader, Dataset, random_split\n",
             "from torchvision import transforms, models\n",
+            "from tqdm.auto import tqdm\n",
             "\n",
             "# Check optional OpenCV\n",
             "try:\n",
             "    import cv2\n",
             "    print(f\"[✓] OpenCV version: {cv2.__version__}\")\n",
             "except Exception as e:\n",
-            "    print(f\"[!] Warning on OpenCV: {e} (PIL and Torchvision will be used).\")\n",
+            "    print(f\"[!] Note on OpenCV: {e} (Torchvision & PIL will be used).\")\n",
             "\n",
             "# Set deterministic seeds for reproducible training\n",
             "def seed_everything(seed=42):\n",
@@ -133,6 +135,7 @@ cells = [
             "        continue\n",
             "\n",
             "    # Otherwise walk the dataset directory\n",
+            "    print(f\"  Scanning directory structure...\")\n",
             "    for root, dirs, files in os.walk(ds_dir):\n",
             "        img_files = [f for f in files if Path(f).suffix.lower() in supported_exts]\n",
             "        if not img_files:\n",
@@ -155,6 +158,10 @@ cells = [
             "                elif any(k in fname_lower for k in live_keywords):\n",
             "                    live_samples.append(full_path)\n",
             "                    ds_live_count += 1\n",
+            "                    \n",
+            "        total_indexed = ds_live_count + ds_spoof_count\n",
+            "        if total_indexed > 0 and total_indexed % 5000 == 0:\n",
+            "            print(f\"    [Status] Found {total_indexed:,} images so far ({ds_live_count:,} live, {ds_spoof_count:,} spoof)...\")\n",
             "                    \n",
             "    print(f\"  -> Found {ds_live_count:,} Live images and {ds_spoof_count:,} Spoof images in this dataset.\")\n",
             "\n",
@@ -270,7 +277,7 @@ cells = [
         "metadata": {},
         "outputs": [],
         "source": [
-            "# --- 5. GPU Training Loop (5 Epochs with Cosine Annealing & AMP) ---\n",
+            "# --- 5. GPU Training Loop (5 Epochs with Cosine Annealing, AMP & Live Status Bar) ---\n",
             "EPOCHS = 5\n",
             "best_val_auc = 0.0\n",
             "best_weights_path = WORK_ROOT / \"mobilenetv3_pad_best.pth\"\n",
@@ -282,7 +289,9 @@ cells = [
             "    model.train()\n",
             "    running_loss, train_correct, train_total = 0.0, 0, 0\n",
             "    \n",
-            "    for imgs, labels in train_loader:\n",
+            "    # Live Training Progress Bar\n",
+            "    train_pbar = tqdm(train_loader, desc=f\"Epoch {epoch}/{EPOCHS} [Train]\", unit=\"batch\", leave=False)\n",
+            "    for imgs, labels in train_pbar:\n",
             "        imgs, labels = imgs.to(device), labels.to(device)\n",
             "        optimizer.zero_grad()\n",
             "        \n",
@@ -300,17 +309,22 @@ cells = [
             "        train_correct += (preds == labels).sum().item()\n",
             "        train_total += labels.size(0)\n",
             "        \n",
+            "        # Live update status bar with current loss & accuracy\n",
+            "        current_acc = (train_correct / train_total) * 100\n",
+            "        train_pbar.set_postfix({\"loss\": f\"{loss.item():.4f}\", \"acc\": f\"{current_acc:.1f}%\"})\n",
+            "        \n",
             "    scheduler.step()\n",
             "    train_loss = running_loss / train_total\n",
             "    train_acc = train_correct / train_total\n",
             "    \n",
-            "    # Validation Phase\n",
+            "    # Live Validation Progress Bar\n",
             "    model.eval()\n",
             "    val_loss, val_correct, val_total = 0.0, 0, 0\n",
             "    all_scores, all_targets = [], []\n",
             "    \n",
+            "    val_pbar = tqdm(val_loader, desc=f\"Epoch {epoch}/{EPOCHS} [Val]\", unit=\"batch\", leave=False)\n",
             "    with torch.no_grad():\n",
-            "        for imgs, labels in val_loader:\n",
+            "        for imgs, labels in val_pbar:\n",
             "            imgs, labels = imgs.to(device), labels.to(device)\n",
             "            with torch.cuda.amp.autocast(enabled=(device.type == \"cuda\")):\n",
             "                logits = model(imgs).squeeze(1)\n",
@@ -323,6 +337,8 @@ cells = [
             "            preds = (probs >= 0.5).astype(float)\n",
             "            val_correct += (preds == labels.cpu().numpy()).sum()\n",
             "            val_total += labels.size(0)\n",
+            "            \n",
+            "            val_pbar.set_postfix({\"val_loss\": f\"{loss.item():.4f}\"})\n",
             "            \n",
             "    val_loss = val_loss / val_total\n",
             "    val_acc = val_correct / val_total\n",
@@ -351,8 +367,9 @@ cells = [
             "model.eval()\n",
             "\n",
             "scores, targets = [], []\n",
+            "calib_pbar = tqdm(val_loader, desc=\"Calibrating EER Threshold\", unit=\"batch\")\n",
             "with torch.no_grad():\n",
-            "    for imgs, labels in val_loader:\n",
+            "    for imgs, labels in calib_pbar:\n",
             "        imgs = imgs.to(device)\n",
             "        with torch.cuda.amp.autocast(enabled=(device.type == \"cuda\")):\n",
             "            probs = torch.sigmoid(model(imgs).squeeze(1)).cpu().numpy()\n",
@@ -483,4 +500,4 @@ output_path = Path("notebooks/03_kaggle_pad_training.ipynb")
 with open(output_path, "w", encoding="utf-8") as f:
     json.dump(notebook, f, indent=1)
 
-print("Successfully written notebooks/03_kaggle_pad_training.ipynb!")
+print("Successfully generated notebooks/03_kaggle_pad_training.ipynb with live tqdm progress bars!")
