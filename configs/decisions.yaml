@@ -1,0 +1,163 @@
+schema_version: 1
+project_id: faceguard-ai-v2
+last_updated: "2026-10-24T17:22:48+05:30"
+allowed_states: [UNRESOLVED, DISCOVERED, VERIFIED, FROZEN]
+decisions:
+  - id: FRAD_PERMISSION
+    state: VERIFIED
+    value:
+      local_processing: true
+      kaggle_cloud_transfer: true
+      storage_policy: private_encrypted
+      publication: private_until_reviewed
+    evidence:
+      - reference/FaceGuard_AI_Implementation_Blueprint.md#1-inputs-from-your-existing-v1-project
+      - data/README.md
+    decided_by: user_authorization
+    decided_at: "2026-10-24T18:06:00+05:30"
+    applies_to:
+      - data/processed/frad_legacy_crops
+    notes: "Authorized for local development and private Kaggle GPU embedding extraction."
+  - id: FRAD_COHORT
+    state: VERIFIED
+    value:
+      dataset_root: data/processed/frad_legacy_crops
+      candidate_folder_count: 234
+      discovered_file_count: 2802
+      content_multiset_sha256: cf24a522c45d81014367897e6a198493d7ea9a7fefb87285becf06ec5aeb269c
+      approved_subjects: 234
+      approved_files: 2801
+    evidence:
+      - reference/FaceGuard_AI_Implementation_Blueprint.md#1-inputs-from-your-existing-v1-project
+      - reports/audits/frad_audit.json
+    decided_by: audit_and_user_approval
+    decided_at: "2026-10-24T18:06:00+05:30"
+    applies_to:
+      - data/manifests/frad_inventory.csv
+      - data/manifests/frad_subjects.csv
+    notes: "Approved full cohort of 234 candidate subjects with 1 exact duplicate excluded."
+  - id: FRAD_LABEL_MEANING
+    state: UNRESOLVED
+    value: null
+    evidence: []
+    decided_by: null
+    decided_at: null
+    applies_to: []
+    notes: "Verify one numeric folder equals one opted-in person and define bona-fide semantics."
+  - id: FRAD_SESSION_POLICY
+    state: UNRESOLVED
+    value: null
+    evidence: []
+    decided_by: null
+    decided_at: null
+    applies_to: []
+    notes: "Filenames are not authoritative session or device metadata."
+  - id: FRAD_SPLIT
+    state: UNRESOLVED
+    value: null
+    evidence: []
+    decided_by: null
+    decided_at: null
+    applies_to: []
+    notes: "Must reference explicit frozen manifest rows and hashes."
+  - id: PAD_DATASET_PERMISSION
+    state: UNRESOLVED
+    value: null
+    evidence: []
+    decided_by: null
+    decided_at: null
+    applies_to: []
+    notes: "No labeled PAD dataset is verified in the current workspace."
+  - id: PAD_LABEL_MAPPING
+    state: UNRESOLVED
+    value: null
+    evidence: []
+    decided_by: null
+    decided_at: null
+    applies_to: []
+    notes: "Source semantics must be proven before mapping bona_fide=1 and attack=0."
+  - id: PAD_SPLIT
+    state: UNRESOLVED
+    value: null
+    evidence: []
+    decided_by: null
+    decided_at: null
+    applies_to: []
+    notes: "Must be subject-disjoint and frozen before training."
+  - id: KAGGLE_ENVIRONMENT
+    state: UNRESOLVED
+    value: null
+    evidence: []
+    decided_by: null
+    decided_at: null
+    applies_to: []
+    notes: "Record preflight before package changes."
+  - id: LOCAL_RUNTIME_ENVIRONMENT
+    state: UNRESOLVED
+    value: null
+    evidence: []
+    decided_by: null
+    decided_at: null
+    applies_to: []
+    notes: "Requires a successful runtime smoke test and platform-specific lock."
+  - id: INSIGHTFACE_PACK
+    state: VERIFIED
+    value:
+      selected_pack: buffalo_m
+      source: "https://github.com/deepinsight/insightface/releases/tag/v0.7"
+      detector_file: det_2.5g.onnx
+      detector_sha256: 041f73f47371333d1d17a6fee6c8ab4e6aecabefe398ff32cca4e2d5eaee0af9
+      recognizer_file: w600k_r50.onnx
+      recognizer_sha256: 4c06341c33c2ca1f86781dab0e829f88ad5b64be9fba56e56bc9ebdefc619e43
+    evidence:
+      - reference/FaceGuard_AI_Implementation_Blueprint.md#3-concrete-models-do-not-mix-model-configurations
+      - docs/EMBEDDING_EXTRACTION.md
+    decided_by: official_insightface_release_audit
+    decided_at: "2026-10-24T18:07:00+05:30"
+    applies_to:
+      - models/private/insightface
+    notes: "Official InsightFace buffalo_m ONNX pack (SCRFD 2.5G + ResNet50 ArcFace)."
+  - id: PAD_TRAINING_CONFIG
+    state: UNRESOLVED
+    value: null
+    evidence: []
+    decided_by: null
+    decided_at: null
+    applies_to: []
+    notes: "Freeze all parameters and module names in the resolved run configuration."
+  - id: PAD_THRESHOLD_POLICY
+    state: UNRESOLVED
+    value: null
+    evidence: []
+    decided_by: null
+    decided_at: null
+    applies_to: []
+    notes: "Choose a blueprint-defined policy before inspecting test results."
+  - id: RECOGNITION_THRESHOLD_POLICY
+    state: UNRESOLVED
+    value: null
+    evidence: []
+    decided_by: null
+    decided_at: null
+    applies_to: []
+    notes: "Choose a blueprint-defined policy before inspecting test results."
+  - id: TARGET_HARDWARE
+    state: UNRESOLVED
+    value: null
+    evidence: []
+    decided_by: null
+    decided_at: null
+    applies_to: []
+    notes: "Record CPU, RAM, OS, camera, providers, threads, and performance objective."
+  - id: PUBLICATION_POLICY
+    state: UNRESOLVED
+    value:
+      default: "private-until-reviewed"
+    evidence:
+      - .gitignore
+      - data/README.md
+      - models/README.md
+    decided_by: null
+    decided_at: null
+    applies_to: []
+    notes: "Conservative ignore controls exist, but the data/model publication policy still requires approval."

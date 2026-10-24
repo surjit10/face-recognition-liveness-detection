@@ -1,0 +1,5 @@
+# Tested local CPU intent; freeze transitive versions after smoke tests.
+insightface==2.1
+onnxruntime==1.31.0
+opencv-python==5.0.0.93
+PyYAML==6.0.3

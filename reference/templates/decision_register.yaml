@@ -1,0 +1,148 @@
+schema_version: 1
+project_id: faceguard-ai-v2
+last_updated: null
+allowed_states:
+  - UNRESOLVED
+  - DISCOVERED
+  - VERIFIED
+  - FROZEN
+decisions:
+  - id: FRAD_PERMISSION
+    state: UNRESOLVED
+    value: null
+    evidence: []
+    decided_by: null
+    decided_at: null
+    applies_to: []
+    notes: "Must separately cover local processing, cloud/Kaggle transfer, storage, and publication."
+  - id: FRAD_COHORT
+    state: DISCOVERED
+    value:
+      candidate_folder_count: 234
+      discovered_file_count: 2802
+      approved_subjects: null
+      approved_files: null
+    evidence:
+      - reference/FaceGuard_AI_Implementation_Blueprint.md#1-inputs-from-your-existing-v1-project
+    decided_by: audit
+    decided_at: "2026-10-24T17:19:03+05:30"
+    applies_to: []
+    notes: "Historical v1 used 233 subjects. Current membership is not approved."
+  - id: FRAD_LABEL_MEANING
+    state: UNRESOLVED
+    value: null
+    evidence: []
+    decided_by: null
+    decided_at: null
+    applies_to: []
+    notes: "Verify one numeric folder equals one opted-in person and define genuine/bona-fide semantics."
+  - id: FRAD_SESSION_POLICY
+    state: UNRESOLVED
+    value: null
+    evidence: []
+    decided_by: null
+    decided_at: null
+    applies_to: []
+    notes: "Filenames are not authoritative session/device metadata."
+  - id: FRAD_SPLIT
+    state: UNRESOLVED
+    value: null
+    evidence: []
+    decided_by: null
+    decided_at: null
+    applies_to: []
+    notes: "Must reference explicit frozen manifest rows and hashes."
+  - id: PAD_DATASET_PERMISSION
+    state: UNRESOLVED
+    value: null
+    evidence: []
+    decided_by: null
+    decided_at: null
+    applies_to: []
+    notes: "No labeled PAD dataset was found in the current dataset audit."
+  - id: PAD_LABEL_MAPPING
+    state: UNRESOLVED
+    value: null
+    evidence: []
+    decided_by: null
+    decided_at: null
+    applies_to: []
+    notes: "Runtime contract requires bona_fide=1 and attack=0 after source mapping is proven."
+  - id: PAD_SPLIT
+    state: UNRESOLVED
+    value: null
+    evidence: []
+    decided_by: null
+    decided_at: null
+    applies_to: []
+    notes: "Must be subject-disjoint and frozen before training."
+  - id: KAGGLE_ENVIRONMENT
+    state: UNRESOLVED
+    value: null
+    evidence: []
+    decided_by: null
+    decided_at: null
+    applies_to: []
+    notes: "Record preflight before package changes."
+  - id: LOCAL_RUNTIME_ENVIRONMENT
+    state: UNRESOLVED
+    value: null
+    evidence: []
+    decided_by: null
+    decided_at: null
+    applies_to: []
+    notes: "Requires successful runtime smoke test and platform-specific lock."
+  - id: INSIGHTFACE_PACK
+    state: UNRESOLVED
+    value:
+      selected_pack: buffalo_m
+      source: null
+      detector_file: det_2.5g.onnx
+      detector_sha256: null
+      recognizer_file: w600k_r50.onnx
+      recognizer_sha256: null
+    evidence: []
+    decided_by: null
+    decided_at: null
+    applies_to: []
+    notes: "Selection is architectural; exact official files, terms, and hashes remain unresolved."
+  - id: PAD_TRAINING_CONFIG
+    state: UNRESOLVED
+    value: null
+    evidence: []
+    decided_by: null
+    decided_at: null
+    applies_to: []
+    notes: "Freeze all parameters and module names in the resolved run config."
+  - id: PAD_THRESHOLD_POLICY
+    state: UNRESOLVED
+    value: null
+    evidence: []
+    decided_by: null
+    decided_at: null
+    applies_to: []
+    notes: "Choose a blueprint-defined policy before inspecting test results."
+  - id: RECOGNITION_THRESHOLD_POLICY
+    state: UNRESOLVED
+    value: null
+    evidence: []
+    decided_by: null
+    decided_at: null
+    applies_to: []
+    notes: "Choose a blueprint-defined policy before inspecting test results."
+  - id: TARGET_HARDWARE
+    state: UNRESOLVED
+    value: null
+    evidence: []
+    decided_by: null
+    decided_at: null
+    applies_to: []
+    notes: "Record CPU, RAM, OS, camera, provider, threads, and performance objective."
+  - id: PUBLICATION_POLICY
+    state: UNRESOLVED
+    value: null
+    evidence: []
+    decided_by: null
+    decided_at: null
+    applies_to: []
+    notes: "Define which source, manifests, models, reports, and screenshots may be public."

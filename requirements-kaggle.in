@@ -1,0 +1,4 @@
+# Kaggle intent only. Run scripts/preflight.py before installing anything.
+# Keep Kaggle's working torch/torchvision pair unchanged.
+insightface==2.1
+PyYAML==6.0.3

@@ -1,0 +1,69 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Virtual environments and local configuration
+.venv/
+venv/
+env/
+.env
+.env.*
+!.env.example
+
+# IDE and OS metadata
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Restricted biometric and derived data
+/data/raw/**
+/data/interim/**
+/data/processed/**
+!/data/raw/.gitkeep
+!/data/interim/.gitkeep
+!/data/processed/.gitkeep
+/dataset/
+/reference/archive/
+*.npy
+*.npz
+*.pkl
+*.pickle
+*.joblib
+
+# Private/restricted model and gallery artifacts
+/models/private/**
+/models/releases/**
+!/models/private/.gitkeep
+!/models/releases/.gitkeep
+*.onnx
+*.pt
+*.pth
+*.ckpt
+*.h5
+*.tflite
+*.engine
+
+# Experiment and build outputs
+/mlruns/
+/.dvc/cache/
+/.ipynb_checkpoints/
+/dist/
+/build/
+*.egg-info/
+/reports/private/
+/reports/**/raw/
+
+# Secrets and credentials
+*.pem
+*.key
+*.crt
+credentials*.json
+secrets*.yaml
+secrets*.yml
