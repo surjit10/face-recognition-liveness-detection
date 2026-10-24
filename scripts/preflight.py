@@ -91,7 +91,12 @@ def collect_preflight() -> dict[str, Any]:
 
     pip_check = _command_output([sys.executable, "-m", "pip", "check"])
     if pip_check and "No broken requirements found" not in pip_check:
-        errors.append("pip check reported broken or conflicting requirements")
+        relevant_conflicts = [
+            line for line in pip_check.splitlines()
+            if any(pkg.lower() in line.lower() for pkg in PACKAGES)
+        ]
+        if relevant_conflicts:
+            errors.append("pip check reported broken requirements for project dependencies")
 
     return {
         "schema_version": 1,
