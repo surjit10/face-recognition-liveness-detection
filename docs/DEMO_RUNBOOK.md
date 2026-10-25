@@ -44,7 +44,29 @@ face provider is `CPUExecutionProvider`, `"gallery_vectors": 1430`,
 `configs/runtime.yaml`. Any mismatch or hash error exits `2`; do not continue to the
 camera until it passes.
 
-## 3. Live camera
+## 3. Centralized desktop application
+
+The recommended operator entry point is the single-window local desktop application:
+
+```bash
+.venv/bin/python scripts/run_app.py
+```
+
+The window automatically performs the camera-free readiness check. **Start camera**
+remains disabled until the configured face models, PAD model, gallery, hashes and CPU
+providers pass. After the check succeeds, press **Start camera** to open authorized
+camera `0` and run the complete pipeline. The same window displays the live preview,
+fail-closed result, PAD progress, FPS, latency, frame age and drop counts.
+
+Optional human-readable names are loaded only from the Git-ignored local file
+`configs/private/identity_labels.yaml`. They affect the desktop banner only. Gallery
+matching, structured events and reports continue to use the canonical pseudonymous ID.
+
+Press **Stop** or close the window to clear the displayed identity, stop both worker
+threads and release the camera. The app does not provide recording, screenshot,
+single-image verification, threshold editing or model-training controls.
+
+## 4. Legacy CLI camera interface
 
 ```bash
 .venv/bin/python scripts/run_demo.py --config configs/runtime.yaml --camera 0
@@ -70,25 +92,26 @@ Presentation:
   collected and aggregated by median.
 - `UNKNOWN` is a valid fail-closed outcome, not a crash. It means PAD passed but the
   gallery did not accept the face. Do not tune thresholds to force a match.
-- `SPOOF` means liveness failed; identity matching is not run.
+- `LIVENESS NOT CONFIRMED` means the PAD median did not pass. This may be an attack or
+  model uncertainty; identity matching is not run.
 - Keep other people and phones/printed photos out of the frame for the single-user
   demonstration. Any second face produces `MULTIPLE FACES`.
 
-## 4. Overlay states
+## 5. Interface states
 
 | Overlay | Operator action |
 |---|---|
 | `NO FACE` | Present one face to the camera. |
-| `MULTIPLE FACES` | Remove additional faces from view. |
+| `MULTIPLE FACES` | Numbered boxes point to every detected face; identities remain unchecked until only one face is visible. |
 | `HOLD STILL` | Steady the face, improve lighting, move closer, avoid motion blur. |
 | `CHECKING LIVENESS` | Hold still; evidence is being collected. |
-| `SPOOF` | End the session and investigate the presentation; do not repeat until it passes. |
+| `LIVENESS NOT CONFIRMED` | Face the camera, improve lighting and retry; do not lower the threshold to force acceptance. |
 | `UNKNOWN` | Record the fail-closed result; do not claim recognition. |
 | `VERIFIED: <ID>` | PAD passed and the pseudonymous label was accepted. |
 
 The identity is shown only after the temporal PAD decision passes.
 
-## 5. Stopping and shutdown
+## 6. Stopping and shutdown
 
 | Input | Behavior |
 |---|---|
@@ -97,11 +120,12 @@ The identity is shown only after the temporal PAD decision passes.
 | `Ctrl+C` | Same cleanup, prints `interrupted` and `ENDED`, exit code `130`. The dashboard process ignores the terminal signal and is closed by the parent. |
 | Camera cannot open | Clear error on stderr, exit code `2`, no window left open. |
 | Camera read fails repeatedly during a run | Stops capture, prints `runtime blocked: camera read failed`, exit code `2`. |
+| **Stop** or desktop window close | Stops workers, releases camera `0`, clears the preview and identity. |
 
 A clean run ends with `capture_summary` (`camera_released: true`) and one `ENDED`
 event. No camera frames are recorded by the application.
 
-## 6. Optional benchmark
+## 7. Optional benchmark
 
 ```bash
 .venv/bin/python scripts/benchmark_runtime.py \
@@ -117,7 +141,7 @@ recognition stages are exercised; an empty scene measures capture and detection 
 The existing receipt in `reports/benchmarks/prototype_camera.json` was captured on a
 scene with no face and therefore reports only `no_face` retries.
 
-## 7. Troubleshooting
+## 8. Troubleshooting
 
 | Symptom | Check |
 |---|---|

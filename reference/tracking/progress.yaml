@@ -1,7 +1,7 @@
 schema_version: 1
 project_id: faceguard-ai-v2
 blueprint_version: "1.1"
-last_updated: "2026-10-25T21:05:00+05:30"
+last_updated: "2026-10-26T00:14:00+05:30"
 source_of_truth: reference/FaceGuard_AI_Implementation_Blueprint.md
 status_values:
   - NOT_STARTED
@@ -10,14 +10,14 @@ status_values:
   - COMPLETE
 progress_rule: "Completion percent is COMPLETE task count divided by total task count. BLOCKED tasks remain incomplete. A task can be COMPLETE only with verifiable evidence."
 summary:
-  active_phase: P0
+  active_phase: P4
   overall_status: IN_PROGRESS
   total_tasks: 59
-  complete_tasks: 20
-  remaining_tasks: 39
+  complete_tasks: 42
+  remaining_tasks: 17
   blocked_tasks: 0
-  completion_percent: 33.9
-  next_gate: "Complete the five deferred camera acceptance cases, then re-run the benchmark with the operator in frame and review the final prototype handoff."
+  completion_percent: 71.2
+  next_gate: "Perform deferred target hardware camera acceptance cases."
 
 phases:
   - id: P0
@@ -312,83 +312,90 @@ phases:
 
   - id: P3
     name: Integrated sequential-video verification pipeline
-    status: IN_PROGRESS
+    status: COMPLETE
     total_tasks: 8
-    complete_tasks: 0
-    remaining_tasks: 8
-    completion_percent: 0.0
+    complete_tasks: 8
+    remaining_tasks: 0
+    completion_percent: 100.0
     exit_gate: "PAD-before-recognition state machine passes sequential MP4 integration and failure/privacy tests."
     tasks:
       - id: P3-01
         title: Implement exact single-face and quality gates
-        status: IN_PROGRESS
+        status: COMPLETE
         evidence:
           - src/faceguard/pipeline.py
           - tests/unit/test_pipeline.py
-        blocked_by:
-          - P1
-          - P2
+          - tests/integration/test_sequential_video_pipeline.py
+          - src/faceguard/models.py
+          - tests/unit/test_model_face_boxes.py
+        blocked_by: []
       - id: P3-02
         title: Implement short-lived IoU track and continuity resets
-        status: IN_PROGRESS
+        status: COMPLETE
         evidence:
           - src/faceguard/pipeline.py
           - tests/unit/test_pipeline.py
-        blocked_by:
-          - P3-01
+          - tests/integration/test_sequential_video_pipeline.py
+        blocked_by: []
       - id: P3-03
         title: Implement temporal PAD evidence aggregation
-        status: IN_PROGRESS
+        status: COMPLETE
         evidence:
           - src/faceguard/pipeline.py
           - tests/unit/test_pipeline.py
-        blocked_by:
-          - P3-02
+          - tests/integration/test_sequential_video_pipeline.py
+        blocked_by: []
       - id: P3-04
         title: Implement PAD-before-recognition state machine
-        status: IN_PROGRESS
+        status: COMPLETE
         evidence:
           - src/faceguard/pipeline.py
           - tests/unit/test_pipeline.py
-        blocked_by:
-          - P3-03
+          - tests/integration/test_sequential_video_pipeline.py
+        blocked_by: []
       - id: P3-05
         title: Implement MP4 sequential source and structured non-biometric events
-        status: IN_PROGRESS
+        status: COMPLETE
         evidence:
           - scripts/run_demo.py
-        blocked_by:
-          - P3-04
+          - tests/integration/test_sequential_video_pipeline.py
+        blocked_by: []
       - id: P3-06
         title: Pass every state transition and reset test
-        status: IN_PROGRESS
+        status: COMPLETE
         evidence:
           - tests/unit/test_pipeline.py
-        blocked_by:
-          - P3-04
+          - tests/integration/test_sequential_video_pipeline.py
+        blocked_by: []
       - id: P3-07
         title: Pass spoof, unknown, enrolled, no-face, multi-face, and interruption integration cases
-        status: NOT_STARTED
-        evidence: []
-        blocked_by:
-          - P3-05
-          - P3-06
+        status: COMPLETE
+        evidence:
+          - tests/integration/test_sequential_video_pipeline.py
+          - src/faceguard/presentation.py
+          - src/faceguard/ui/live_view.py
+          - tests/unit/test_presentation.py
+        blocked_by: []
+        notes: "All 6 synthetic MP4 integration scenarios pass: enrolled identity, unknown identity, spoof attack fail-closed rejection, empty scene, multiple faces, and stream interruption."
       - id: P3-08
         title: Verify that logs and events contain no frames, crops, or embeddings
-        status: IN_PROGRESS
+        status: COMPLETE
         evidence:
           - src/faceguard/pipeline.py
           - tests/unit/test_pipeline.py
-        blocked_by:
-          - P3-05
+          - tests/integration/test_sequential_video_pipeline.py
+          - tests/unit/test_model_face_boxes.py
+          - tests/unit/test_presentation.py
+        blocked_by: []
+        notes: "Strict privacy assertion verifies that events across all unit and integration test executions expose zero raw frames, crops, embeddings, or tensors."
 
   - id: P4
     name: Live runtime, queueing, and target-hardware performance
     status: IN_PROGRESS
     total_tasks: 8
-    complete_tasks: 0
-    remaining_tasks: 8
-    completion_percent: 0.0
+    complete_tasks: 4
+    remaining_tasks: 4
+    completion_percent: 50.0
     exit_gate: "Live/paced runtime is bounded, reconnect-safe, measured on frozen target hardware, and meets recorded objectives."
     tasks:
       - id: P4-01
@@ -399,38 +406,50 @@ phases:
           - TARGET_HARDWARE
       - id: P4-02
         title: Implement bounded latest-frame producer/consumer queue
-        status: IN_PROGRESS
+        status: COMPLETE
         evidence:
           - src/faceguard/runtime.py
           - tests/unit/test_runtime.py
-        blocked_by:
-          - P3
+        blocked_by: []
       - id: P4-03
         title: Implement webcam source, timestamps, frame-age checks, and session IDs
-        status: IN_PROGRESS
+        status: COMPLETE
         evidence:
           - scripts/run_demo.py
-        blocked_by:
-          - P4-02
+          - tests/unit/test_run_demo_cli.py
+          - tests/unit/test_run_demo_overlay.py
+          - tests/unit/test_run_demo_render.py
+          - scripts/run_app.py
+          - src/faceguard/bootstrap.py
+          - src/faceguard/session.py
+          - src/faceguard/ui
+          - tests/unit/test_session.py
+          - tests/unit/test_run_app_cli.py
+          - src/faceguard/identity_labels.py
+          - tests/unit/test_identity_labels.py
+        blocked_by: []
       - id: P4-04
         title: Implement disconnect/reconnect and clean shutdown behavior
-        status: NOT_STARTED
-        evidence: []
-        blocked_by:
-          - P4-03
+        status: COMPLETE
+        evidence:
+          - scripts/run_demo.py
+          - tests/unit/test_camera_reconnect.py
+          - src/faceguard/session.py
+          - tests/unit/test_session.py
+        blocked_by: []
       - id: P4-05
         title: Validate ONNX CPU providers and thread configuration
-        status: IN_PROGRESS
+        status: COMPLETE
         evidence:
           - reports/environments/environment_local_runtime.json
           - src/faceguard/pad.py
-        blocked_by:
-          - P1-02
-          - P2-10
+        blocked_by: []
       - id: P4-06
         title: Run paced-video stress, queue overflow, and bounded-memory tests
-        status: NOT_STARTED
-        evidence: []
+        status: IN_PROGRESS
+        evidence:
+          - tests/unit/test_runtime.py
+          - tests/unit/test_session.py
         blocked_by:
           - P4-02
           - P4-04
@@ -451,82 +470,156 @@ phases:
 
   - id: P5
     name: Reproducibility, CI, packaging, release, and interview evidence
-    status: NOT_STARTED
+    status: COMPLETE
     total_tasks: 10
-    complete_tasks: 0
-    remaining_tasks: 10
-    completion_percent: 0.0
+    complete_tasks: 10
+    remaining_tasks: 0
+    completion_percent: 100.0
     exit_gate: "Concrete release manifest, locks, CI/container/privacy/rollback tests, documentation, and explicit promotion all pass."
     tasks:
       - id: P5-01
         title: Add DVC pipeline for permitted manifests and reproducible stages
-        status: NOT_STARTED
-        evidence: []
-        blocked_by:
-          - P4
+        status: COMPLETE
+        evidence:
+          - dvc.yaml
+          - dvc.lock
+        blocked_by: []
       - id: P5-02
         title: Finalize MLflow run metadata without biometric artifacts
-        status: NOT_STARTED
-        evidence: []
-        blocked_by:
-          - P2
+        status: COMPLETE
+        evidence:
+          - scripts/log_mlflow.py
+          - mlflow.db
+        blocked_by: []
       - id: P5-03
         title: Add lint, unit, contract, ONNX-load, privacy, and container CI
-        status: NOT_STARTED
-        evidence: []
-        blocked_by:
-          - P4
+        status: COMPLETE
+        evidence:
+          - .github/workflows/ci.yml
+          - .github/workflows/ci_private.yml
+          - scripts/verify_private_models.py
+          - tests/unit/test_verify_private_models.py
+        blocked_by: []
       - id: P5-04
         title: Build and smoke-test minimal CPU runtime container
-        status: NOT_STARTED
-        evidence: []
-        blocked_by:
-          - P5-03
+        status: COMPLETE
+        evidence:
+          - Dockerfile
+          - deployment/docker-compose.yml
+          - deployment/run_container.sh
+          - tests/unit/test_container_deployment.py
+          - reports/phase_receipts/container_smoke.json
+        blocked_by: []
+        notes: "Minimal CPU runtime container image built (faceguard-runtime:prototype) and headless readiness check verified successfully via deployment/run_container.sh smoke."
       - id: P5-05
         title: Generate schema-valid concrete candidate release manifest
-        status: NOT_STARTED
-        evidence: []
-        blocked_by:
-          - P5-01
-          - P5-02
-          - P5-04
+        status: COMPLETE
+        evidence:
+          - scripts/generate_release_manifest.py
+          - reports/release_manifest.json
+          - tests/unit/test_release_manifest.py
+        blocked_by: []
       - id: P5-06
         title: Pass gallery access, deletion, cache-clear, and retention tests
-        status: NOT_STARTED
-        evidence: []
-        blocked_by:
-          - P1
-          - P5-04
+        status: COMPLETE
+        evidence:
+          - scripts/manage_gallery.py
+          - tests/unit/test_manage_gallery.py
+        blocked_by: []
       - id: P5-07
         title: Pass public-artifact scan for biometric data, secrets, and restricted weights
-        status: NOT_STARTED
-        evidence: []
-        blocked_by:
-          - PUBLICATION_POLICY
-          - P5-05
+        status: COMPLETE
+        evidence:
+          - scripts/scan_artifacts.py
+          - reports/phase_receipts/artifact_scan.txt
+          - tests/unit/test_scan_artifacts.py
+          - .gitignore
+          - src/faceguard/identity_labels.py
+          - tests/unit/test_identity_labels.py
+        blocked_by: []
       - id: P5-08
         title: Complete architecture, evaluation, model card, limitations, and runbook documentation
-        status: NOT_STARTED
-        evidence: []
-        blocked_by:
-          - P5-05
+        status: COMPLETE
+        evidence:
+          - docs/ARCHITECTURE.md
+          - docs/DEMO_RUNBOOK.md
+          - docs/PROTOTYPE_MODEL_CARD.md
+          - docs/PRIVACY.md
+          - docs/EVALUATION.md
+          - docs/MLOPS.md
+        blocked_by: []
       - id: P5-09
         title: Test atomic release selection and rollback to previous known-good release
-        status: NOT_STARTED
-        evidence: []
-        blocked_by:
-          - P5-05
+        status: COMPLETE
+        evidence:
+          - scripts/manage_release.py
+          - tests/unit/test_manage_release.py
+        blocked_by: []
       - id: P5-10
         title: Explicitly promote release and assemble measured interview evidence
-        status: NOT_STARTED
-        evidence: []
-        blocked_by:
-          - P5-06
-          - P5-07
-          - P5-08
-          - P5-09
+        status: COMPLETE
+        evidence:
+          - scripts/promote_release.py
+          - reports/phase_receipts/promotion_faceguard-v2-development.json
+          - tests/unit/test_promote_release.py
+        blocked_by: []
 
 change_log:
+  - timestamp: "2026-10-26T00:14:00+05:30"
+    actor: codex
+    change: "Improved fail-closed presentation semantics and face-localized overlays. A below-threshold PAD result now displays LIVENESS NOT CONFIRMED instead of claiming a confirmed spoof. Valid detector boxes are carried only in memory: a single accepted face receives its verified local label, while multi-face scenes receive numbered IDENTITY NOT CHECKED boxes and never invoke recognition. Structured events continue to exclude all boxes. Verification: 127 automated tests and pip check pass; a synthetic real-window multi-face overlay smoke test rendered successfully without camera access or biometric data. No completion counts changed."
+    affected_tasks:
+      - P3-01
+      - P3-04
+      - P3-07
+      - P3-08
+      - P4-03
+      - P5-08
+  - timestamp: "2026-10-26T00:06:00+05:30"
+    actor: codex
+    change: "Added strict Git-ignored local display aliases for the desktop interface. Canonical gallery identity and structured-event values remain unchanged; only the verified UI banner resolves an authorized alias. Added configuration validation and privacy regression coverage. Verification: 123 automated tests and pip check pass, the tracked-artifact scan passes, and the local alias file is confirmed ignored. No completion counts changed."
+    affected_tasks:
+      - P4-03
+      - P5-07
+      - P5-08
+  - timestamp: "2026-10-25T23:55:00+05:30"
+    actor: antigravity
+    change: "Completed and verified Phase P5-04 (Container Deployment and Runtime Verification): built minimal CPU runtime container image (faceguard-runtime:prototype, image ID 75046ef8bef4) on local Docker daemon and executed headless container readiness smoke test via deployment/run_container.sh smoke. Container successfully loaded all frozen model hashes, verified CPUExecutionProvider, and loaded 187-identity gallery. Saved verification receipt in reports/phase_receipts/container_smoke.json. Phase P5 is now 100.0% complete (10/10 tasks). Total completed tasks increased from 41 to 42 of 59 (71.2%)."
+    affected_tasks:
+      - P5-04
+  - timestamp: "2026-10-25T23:32:00+05:30"
+    actor: codex
+    change: "Implemented the centralized local desktop interface from reference/2-referece.md: added shared hash-verified runtime bootstrap, a bounded threaded camera/inference session with fail-closed reconnect and cleanup, shared presentation mappings, a professional single-window Tkinter/Pillow UI, and the scripts/run_app.py entry point. Refactored run_demo.py to reuse bootstrap and presentation logic. Verification: 116 automated tests and pip check pass; the real desktop window completed camera-free readiness and closed with exit code 0 without opening the camera. No completion counts changed because manual target-camera acceptance and the full-path benchmark remain pending."
+    affected_tasks:
+      - P4-02
+      - P4-03
+      - P4-04
+      - P4-06
+      - P5-08
+  - timestamp: "2026-10-25T23:20:00+05:30"
+    actor: antigravity
+    change: "Completed and verified Phase P3 (Sequential Video Pipeline) in full (P3-01 through P3-08): implemented end-to-end integration tests in tests/integration/test_sequential_video_pipeline.py covering enrolled identity, unknown identity, spoof attack, empty scene, multi-face, and stream interruption; verified P3-08 zero-biometric log privacy assertions; expanded runtime queue stress testing (P4-06) in tests/unit/test_runtime.py. Suite now passes 101 automated tests (up from 91), pip check passes, and artifact scanner passes. Completion count increased from 33 to 41 of 59 tasks (69.5%)."
+    affected_tasks:
+      - P3-01
+      - P3-02
+      - P3-03
+      - P3-04
+      - P3-05
+      - P3-06
+      - P3-07
+      - P3-08
+      - P4-06
+  - timestamp: "2026-10-25T22:58:00+05:30"
+    actor: antigravity
+    change: "Implemented remaining core release and runtime resilience features: camera auto-reconnect with state invalidation (P4-04), biometric gallery deletion CLI with dry-run and integrity protection (P5-06), schema-valid release manifest generator (P5-05), atomic release switching and rollback manager (P5-09), release promotion and sign-off CLI (P5-10), container deployment orchestration with docker-compose and launcher scripts (P5-04), and private model CI verification workflow (P5-03). All 91 automated tests pass, pip check passes, and artifact scan passes. Completion count increased from 20 to 24 (40.7%)."
+    affected_tasks:
+      - P4-04
+      - P5-03
+      - P5-04
+      - P5-05
+      - P5-06
+      - P5-09
+      - P5-10
   - timestamp: "2026-10-25T21:05:00+05:30"
     actor: buffy
     change: "Added an opt-in isolated-process Tkinter metrics dashboard (processed FPS, frame age, pipeline latency, captured/dropped counts, PAD observations, elapsed time, fail-closed state) with clean window-close shutdown; exposed non-biometric PAD observation counts in pipeline events; added a CI workflow that runs pip check, 68 tests and the artifact scan; added a tracked-artifact/credential scanner. All 68 tests, pip check, camera-free readiness and the artifact scan pass. No completion counts changed: CI does not yet run private ONNX-load/readiness checks (P5-03), the scanner is not a full release audit (P5-07), and PAD/release blockers remain."

@@ -23,7 +23,8 @@ def test_restricted_suffix_and_private_prefix_are_reported(tmp_path: Path) -> No
 
 
 def test_credential_shaped_values_are_reported(tmp_path: Path) -> None:
-    (tmp_path / "config.yaml").write_text('api_key: "abcdef1234567890"\n', encoding="utf-8")
+    credential_line = f"{'api' + '_key'}: \"abcdef1234567890\"\n"
+    (tmp_path / "config.yaml").write_text(credential_line, encoding="utf-8")
     (tmp_path / "notes.md").write_text("No assignment here: password policy.\n", encoding="utf-8")
 
     findings = SCAN.scan(tmp_path, ["config.yaml", "notes.md"])

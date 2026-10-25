@@ -83,6 +83,7 @@ class VerificationResult:
     reason: str
     latency_ms: float
     pad_observations: int = 0
+    face_boxes_xyxy: tuple[tuple[float, float, float, float], ...] = ()
 
     def event(self) -> dict[str, object]:
         """Return a log-safe event; frames and embeddings are intentionally absent."""
@@ -146,6 +147,7 @@ class VideoVerifier:
         self._bbox: tuple[float, float, float, float] | None = None
         self._last_timestamp_ms: float | None = None
         self._pad_scores: list[float] = []
+        self._face_boxes: tuple[tuple[float, float, float, float], ...] = ()
         self._terminal_result: VerificationResult | None = None
 
     def _result(
@@ -157,6 +159,7 @@ class VideoVerifier:
         reason: str,
         pad_score: float | None = None,
         match: GalleryMatch | None = None,
+        face_boxes_xyxy: tuple[tuple[float, float, float, float], ...] | None = None,
     ) -> VerificationResult:
         self._state = state
         return VerificationResult(
@@ -170,9 +173,18 @@ class VideoVerifier:
             reason=reason,
             latency_ms=(time.perf_counter() - started) * 1000.0,
             pad_observations=len(self._pad_scores),
+            face_boxes_xyxy=(
+                self._face_boxes if face_boxes_xyxy is None else face_boxes_xyxy
+            ),
         )
 
-    def _retry_and_reset(self, started: float, reason: str) -> VerificationResult:
+    def _retry_and_reset(
+        self,
+        started: float,
+        reason: str,
+        *,
+        face_boxes_xyxy: tuple[tuple[float, float, float, float], ...] = (),
+    ) -> VerificationResult:
         old_track = self._track_id
         self.reset()
         self._state = VerificationState.RETRY
@@ -187,6 +199,7 @@ class VideoVerifier:
             reason=reason,
             latency_ms=(time.perf_counter() - started) * 1000.0,
             pad_observations=len(self._pad_scores),
+            face_boxes_xyxy=face_boxes_xyxy,
         )
 
     def _quality_reason(
@@ -241,11 +254,22 @@ class VideoVerifier:
             observation = self.analyzer.embed_rgb(rgb)
         except Exception:
             return self._retry_and_reset(started, "face_model_error")
+        observed_boxes = observation.face_boxes_xyxy
+        if not observed_boxes and observation.bbox_xyxy is not None:
+            observed_boxes = (observation.bbox_xyxy,)
         if observation.error is not None:
-            return self._retry_and_reset(started, observation.error)
+            return self._retry_and_reset(
+                started,
+                observation.error,
+                face_boxes_xyxy=observed_boxes,
+            )
         quality_reason = self._quality_reason(frame_bgr, observation)
         if quality_reason is not None:
-            return self._retry_and_reset(started, quality_reason)
+            return self._retry_and_reset(
+                started,
+                quality_reason,
+                face_boxes_xyxy=observed_boxes,
+            )
         assert observation.bbox_xyxy is not None
         assert observation.embedding is not None
 
@@ -261,6 +285,7 @@ class VideoVerifier:
             self._next_track_id += 1
             self._state = VerificationState.COLLECTING_PAD
         self._bbox = observation.bbox_xyxy
+        self._face_boxes = observed_boxes
         self._last_timestamp_ms = float(timestamp_ms)
 
         if continuing and self._terminal_result is not None:
@@ -276,14 +301,19 @@ class VideoVerifier:
                 reason="cached_continuous_track",
                 latency_ms=(time.perf_counter() - started) * 1000.0,
                 pad_observations=cached.pad_observations,
+                face_boxes_xyxy=self._face_boxes,
             )
 
         try:
             pad_score = float(self.pad_model.score_live(frame_bgr, observation.bbox_xyxy))
         except (PadInferenceError, ValueError, RuntimeError):
-            return self._retry_and_reset(started, "pad_model_error")
+            return self._retry_and_reset(
+                started, "pad_model_error", face_boxes_xyxy=self._face_boxes
+            )
         if not np.isfinite(pad_score) or not 0.0 <= pad_score <= 1.0:
-            return self._retry_and_reset(started, "invalid_pad_score")
+            return self._retry_and_reset(
+                started, "invalid_pad_score", face_boxes_xyxy=self._face_boxes
+            )
         self._pad_scores.append(pad_score)
         aggregate = float(np.median(self._pad_scores))
         if len(self._pad_scores) < self.policy.pad_min_observations:
@@ -313,7 +343,9 @@ class VideoVerifier:
                 min_margin=self.policy.recognition_min_margin,
             )
         except GalleryError:
-            return self._retry_and_reset(started, "gallery_error")
+            return self._retry_and_reset(
+                started, "gallery_error", face_boxes_xyxy=self._face_boxes
+            )
         if match.status == "verified":
             result = self._result(
                 started,

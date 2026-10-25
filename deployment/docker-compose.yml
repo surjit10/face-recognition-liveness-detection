@@ -1,0 +1,27 @@
+# FaceGuard AI — Container Deployment Orchestration
+services:
+  faceguard:
+    image: faceguard-runtime:prototype
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    container_name: faceguard-runtime
+    user: "1000:1000"
+    read_only: false
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      # Private model pack, PAD candidate, and gallery mounted strictly read-only
+      - ../models/private:/app/models/private:ro
+      # Output reports directory mounted for readiness or event receipts
+      - ../reports:/app/reports:rw
+      # X11 display socket forwarding (optional, for GUI preview)
+      - /tmp/.X11-unix:/tmp/.X11-unix:ro
+    environment:
+      - PYTHONUNBUFFERED=1
+      - DISPLAY=${DISPLAY:-}
+    # Device passthrough for live camera (uncomment when camera is attached)
+    # devices:
+    #   - "${CAMERA_DEVICE:-/dev/video0}:/dev/video0"
+    command: ["--config", "configs/runtime.yaml", "--check-only"]
+    restart: "no"

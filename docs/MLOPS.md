@@ -10,7 +10,7 @@ provenance is unresolved.
 |---|---|---|
 | Frozen runtime | `requirements-runtime.lock` | Reproducible CPU runtime; `pip check` must pass. |
 | Isolated MLOps tooling | `requirements-mlops.in`, `requirements-mlops.lock`, `.venv-mlops/` | DVC + MLflow live in a separate environment so they cannot disturb the runtime. |
-| Automated tests | `tests/`, `.github/workflows/ci.yml` | 68 unit/contract tests run on every push and pull request. |
+| Automated tests | `tests/`, `.github/workflows/ci.yml` | 116 unit, contract and integration tests run on every push and pull request. |
 | Continuous integration | [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) | Installs the runtime lock, runs `pip check`, the test suite and the artifact scan. |
 | Artifact/secret scan | [`scripts/scan_artifacts.py`](../scripts/scan_artifacts.py) | Fails on biometric/model artifacts, private paths, `.env`, credential files or credential-shaped assignments. |
 | DVC pipeline | [`dvc.yaml`](../dvc.yaml), `dvc.lock` | Reproducible `readiness` and `scan` stages with private model hashing; no biometric data is copied to a remote. |

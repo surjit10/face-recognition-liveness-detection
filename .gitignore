@@ -16,6 +16,7 @@ env/
 .env
 .env.*
 !.env.example
+/configs/private/**
 
 # IDE and OS metadata
 .idea/

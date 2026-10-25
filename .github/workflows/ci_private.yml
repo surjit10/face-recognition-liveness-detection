@@ -1,0 +1,22 @@
+name: ci-private
+
+# This workflow is strictly for self-hosted runners where private models
+# are mounted locally under models/private/. It NEVER runs on public pull requests.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify-private-models:
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify installed requirements
+        run: python -m pip check
+      - name: Run private model verification and readiness checks
+        run: |
+          python scripts/verify_private_models.py --readiness-report reports/environments/runtime_readiness.json
+      - name: Scan tracked artifacts for credential or biometric leakage
+        run: python scripts/scan_artifacts.py

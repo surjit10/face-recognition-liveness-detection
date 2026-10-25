@@ -1,5 +1,5 @@
 {
-  "created_at": "2026-10-25T14:04:13.176776+00:00",
+  "created_at": "2026-10-25T18:20:24.788937+00:00",
   "event": "prototype_benchmark",
   "limitations": [
     "Aggregate prototype measurement on one laptop and camera; not a general performance guarantee.",
@@ -14,22 +14,22 @@
   "schema_version": 1,
   "session": {
     "camera_released": true,
-    "captured_frames": 65,
+    "captured_frames": 27,
     "dropped_frames": 0,
-    "duration_seconds": 10.49,
-    "median_latency_ms": 36.8,
-    "p95_latency_ms": 108.05,
-    "peak_memory_mb": 643.2,
-    "processed_fps": 5.91,
-    "processed_frames": 62,
+    "duration_seconds": 5.29,
+    "median_latency_ms": 36.6,
+    "p95_latency_ms": 114.62,
+    "peak_memory_mb": 643.9,
+    "processed_fps": 4.16,
+    "processed_frames": 22,
     "read_failures": false,
     "reason_counts": {
-      "no_face": 62
+      "no_face": 22
     },
     "state_counts": {
-      "RETRY": 62
+      "RETRY": 22
     },
-    "warmup_frames": 3
+    "warmup_frames": 5
   },
   "source": {
     "camera": {

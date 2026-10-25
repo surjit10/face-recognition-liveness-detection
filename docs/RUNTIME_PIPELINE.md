@@ -54,7 +54,11 @@ Sequential video mode processes every frame in order for accuracy evaluation.
 | `src/faceguard/pipeline.py` | Temporal PAD-before-recognition state machine |
 | `src/faceguard/runtime.py` | Bounded latest-frame queue |
 | `src/faceguard/runtime_config.py` | Strict, no-unknown-key runtime configuration |
+| `src/faceguard/bootstrap.py` | Shared hash-verified runtime construction and readiness report |
+| `src/faceguard/session.py` | Bounded desktop camera capture, inference and reconnect lifecycle |
+| `src/faceguard/presentation.py` | Shared fail-closed operator messages and safe events |
 | `src/faceguard/recognition_metrics.py` | Validation-only threshold selection |
+| `scripts/run_app.py` | Centralized local desktop entry point |
 | `scripts/run_demo.py` | Thin video/webcam entry point |
 
 Private weights and galleries stay under `models/private/` and are ignored by Git.

@@ -25,7 +25,10 @@ def _result(status, reason, state="RETRY", person_id=None):
         (_result("retry", "multiple_faces"), "MULTIPLE FACES"),
         (_result("retry", "face_too_small"), "HOLD STILL"),
         (_result("retry", "collecting_pad_evidence", "COLLECTING_PAD"), "CHECKING LIVENESS"),
-        (_result("spoof", "pad_below_threshold", "PAD_FAILED"), "SPOOF"),
+        (
+            _result("spoof", "pad_below_threshold", "PAD_FAILED"),
+            "LIVENESS NOT CONFIRMED",
+        ),
         (_result("unknown", "pad_passed_identity_below_threshold", "UNKNOWN"), "UNKNOWN"),
         (_result("verified", "pad_passed_identity_accepted", "IDENTIFIED", "000"), "VERIFIED: 000"),
         (_result("verified", "pad_passed_identity_accepted", "IDENTIFIED"), "HOLD STILL"),

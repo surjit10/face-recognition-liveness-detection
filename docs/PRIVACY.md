@@ -26,6 +26,10 @@ score, PAD score, track ID, model version, reason and latency. It never contains
 frame, crop, bounding box, embedding, pixel value or per-frame similarity history.
 Normal runs emit no per-frame score series.
 
+The desktop preview may draw face boxes and local display labels in memory. Those
+annotations are never added to structured events or saved by the application. In a
+multi-face scene, boxes are numbered only; identity matching remains disabled.
+
 The only files the runtime can write are:
 
 - `reports/environments/runtime_readiness.json` when `--readiness-report` is used, which
@@ -53,8 +57,10 @@ replace. Manifests and decisions contain labels and hashes, never images or vect
 
 - Do not attach camera frames, crops or screen recordings containing faces to reports.
 - Aggregate metrics, hashes, pseudonymous labels and state counts are permitted.
-- Identity `000` and all other labels are pseudonymous project labels; they are not
-  real names and must not be mapped to names in public material.
+- Identity `000` and all other gallery labels remain canonical pseudonymous project
+  IDs. An explicitly authorized operator may define a local display alias under the
+  Git-ignored `configs/private/identity_labels.yaml`, but real names must never appear
+  in tracked configuration, structured events, reports or public material.
 - If an operator records the demonstration externally, that recording is outside the
   application and is governed by the operator's retention policy. It must be deleted
   after review and must never be committed.

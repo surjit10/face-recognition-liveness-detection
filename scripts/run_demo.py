@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 import argparse
-from datetime import datetime, timezone
 import json
 import os
 import queue
@@ -20,72 +19,30 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_ROOT / "src"))
 
 from faceguard.config import ConfigurationError  # noqa: E402
-from faceguard.gallery import Gallery, GalleryError  # noqa: E402
-from faceguard.models import InsightFaceEmbedder, ModelPackError  # noqa: E402
-from faceguard.pad import OnnxPadModel, PadInferenceError  # noqa: E402
-from faceguard.pipeline import VideoVerifier  # noqa: E402
+from faceguard.bootstrap import RuntimeFactory, build_readiness_report  # noqa: E402
+from faceguard.gallery import GalleryError  # noqa: E402
+from faceguard.models import ModelPackError  # noqa: E402
+from faceguard.pad import PadInferenceError  # noqa: E402
+from faceguard.presentation import operator_message, safe_event  # noqa: E402
 from faceguard.runtime import FramePacket, LatestFrameQueue  # noqa: E402
-from faceguard.runtime_config import load_runtime_config  # noqa: E402
 from faceguard.telemetry import MetricsDashboard, MetricsSnapshot, RollingMetrics  # noqa: E402
 
-OVERLAY_MESSAGES = {
-    "no_face": "NO FACE",
-    "multiple_faces": "MULTIPLE FACES",
-    "collecting_pad_evidence": "CHECKING LIVENESS",
-    "pad_below_threshold": "SPOOF",
-}
 READ_FAILURE_LIMIT = 3
 
 
 def build_verifier(config_path: Path):
-    config = load_runtime_config(config_path, project_root=PROJECT_ROOT)
-    analyzer = InsightFaceEmbedder(
-        model_root=config.insightface_model_root,
-        pack=config.insightface_pack,
-        providers=config.providers,
-        expected_hashes={
-            config.detector_file: config.detector_sha256,
-            config.recognizer_file: config.recognizer_sha256,
-        },
-    )
-    pad = OnnxPadModel(
-        config.pad_path,
-        expected_sha256=config.pad_sha256,
-        providers=config.providers,
-        preprocess=config.pad_preprocess,
-    )
-    gallery = Gallery.load(
-        config.gallery_path,
-        expected_sha256=config.gallery_sha256,
-        expected_embedding_model_sha256=config.recognizer_sha256,
-    )
-    verifier = VideoVerifier(
-        analyzer=analyzer,
-        pad_model=pad,
-        gallery=gallery,
-        policy=config.pipeline_policy,
-        model_version=config.release_id,
-    )
-    return verifier, config
+    bundle = RuntimeFactory.load(config_path, project_root=PROJECT_ROOT)
+    return bundle.verifier, bundle.config
 
 
 def overlay_text(result) -> str:
     """Return the operator message; identity appears only on a PAD-gated verification."""
-    person_id = getattr(result, "person_id", None)
-    if result.status == "verified" and person_id:
-        return f"VERIFIED: {person_id}"
-    if result.status == "spoof":
-        return "SPOOF"
-    if result.status == "unknown":
-        return "UNKNOWN"
-    if result.reason in OVERLAY_MESSAGES:
-        return OVERLAY_MESSAGES[result.reason]
-    return "HOLD STILL"
+    return operator_message(result)
 
 
 def render_and_report(frame, result, sequence: int, no_display: bool, last_state):
     if result.state != last_state:
-        print(json.dumps({"sequence": sequence, **result.event()}, sort_keys=True), flush=True)
+        print(json.dumps(safe_event(sequence, result), sort_keys=True), flush=True)
         last_state = result.state
     if no_display:
         return last_state, False
@@ -157,13 +114,24 @@ def run_video(
     return 0
 
 
-def run_camera(verifier, config, capture, no_display: bool, metrics=None, dashboard=None) -> int:
+def run_camera(
+    verifier,
+    config,
+    capture,
+    no_display: bool,
+    metrics=None,
+    dashboard=None,
+    camera_source: int | str | None = None,
+    max_reconnect_attempts: int = 3,
+    reconnect_delay_s: float = 1.0,
+) -> int:
     frames = LatestFrameQueue(maxsize=config.frame_queue_size)
     stopping = threading.Event()
     producer_done = threading.Event()
     read_failed = threading.Event()
 
     def produce() -> None:
+        nonlocal capture
         sequence = 0
         failures = 0
         try:
@@ -172,8 +140,70 @@ def run_camera(verifier, config, capture, no_display: bool, metrics=None, dashbo
                 if not ok:
                     failures += 1
                     if failures >= READ_FAILURE_LIMIT:
-                        read_failed.set()
-                        break
+                        if camera_source is None or max_reconnect_attempts <= 0:
+                            read_failed.set()
+                            break
+                        print(
+                            json.dumps(
+                                {
+                                    "event": "camera_disconnected",
+                                    "reason": "read_failure_limit_exceeded",
+                                    "camera_source": str(camera_source),
+                                },
+                                sort_keys=True,
+                            ),
+                            flush=True,
+                        )
+                        if hasattr(verifier, "reset"):
+                            verifier.reset()
+                        capture.release()
+
+                        reconnected = False
+                        for attempt in range(1, max_reconnect_attempts + 1):
+                            if stopping.wait(reconnect_delay_s):
+                                break
+                            print(
+                                json.dumps(
+                                    {
+                                        "attempt": attempt,
+                                        "camera_source": str(camera_source),
+                                        "event": "camera_reconnecting",
+                                        "max_attempts": max_reconnect_attempts,
+                                    },
+                                    sort_keys=True,
+                                ),
+                                flush=True,
+                            )
+                            new_cap = cv2.VideoCapture(camera_source)
+                            if new_cap.isOpened():
+                                ok_test, test_frame = new_cap.read()
+                                if ok_test and test_frame is not None:
+                                    capture = new_cap
+                                    reconnected = True
+                                    failures = 0
+                                    sequence += 1
+                                    if hasattr(verifier, "reset"):
+                                        verifier.reset()
+                                    frames.put_latest(
+                                        FramePacket(test_frame, time.monotonic() * 1000.0, sequence)
+                                    )
+                                    print(
+                                        json.dumps(
+                                            {
+                                                "attempt": attempt,
+                                                "camera_source": str(camera_source),
+                                                "event": "camera_reconnected",
+                                            },
+                                            sort_keys=True,
+                                        ),
+                                        flush=True,
+                                    )
+                                    break
+                                new_cap.release()
+                        if not reconnected:
+                            read_failed.set()
+                            break
+                        continue
                     time.sleep(0.05)
                     continue
                 failures = 0
@@ -256,6 +286,18 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         type=Path,
         help="atomically save the --check-only JSON receipt",
     )
+    parser.add_argument(
+        "--max-reconnect-attempts",
+        type=int,
+        default=3,
+        help="maximum consecutive camera reconnect attempts on capture loss (default: 3)",
+    )
+    parser.add_argument(
+        "--reconnect-delay-s",
+        type=float,
+        default=1.0,
+        help="seconds to wait between camera reconnect attempts (default: 1.0)",
+    )
     args = parser.parse_args(argv)
     if args.check_only and (args.video is not None or args.camera is not None):
         parser.error("--check-only cannot be combined with --video or --camera")
@@ -277,23 +319,7 @@ def main() -> int:
         return 2
 
     if args.check_only:
-        report = {
-            "schema_version": 1,
-            "created_at": datetime.now(timezone.utc).isoformat(),
-            "event": "runtime_ready",
-            "release_id": config.release_id,
-            "providers": list(config.providers),
-            "face_pack": config.insightface_pack,
-            "face_runtime_providers": {
-                name: list(providers)
-                for name, providers in verifier.analyzer.runtime_providers.items()
-            },
-            "verified_face_model_hashes": verifier.analyzer.model_hashes,
-            "pad_model_sha256": verifier.pad_model.model_sha256,
-            "gallery_vectors": verifier.gallery.size,
-            "gallery_identities": verifier.gallery.identity_count,
-            "camera_opened": False,
-        }
+        report = build_readiness_report(verifier, config)
         rendered = json.dumps(report, indent=2, sort_keys=True) + "\n"
         print(rendered, end="")
         if args.readiness_report is not None:
@@ -345,7 +371,15 @@ def main() -> int:
             )
         else:
             exit_code = run_camera(
-                verifier, config, capture, args.no_display, metrics, dashboard
+                verifier,
+                config,
+                capture,
+                args.no_display,
+                metrics,
+                dashboard,
+                camera_source=args.camera,
+                max_reconnect_attempts=args.max_reconnect_attempts,
+                reconnect_delay_s=args.reconnect_delay_s,
             )
     except KeyboardInterrupt:
         interrupted = True

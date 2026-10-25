@@ -173,3 +173,30 @@ def test_log_safe_event_contains_no_frame_embedding_or_bbox() -> None:
     assert "frame" not in event
     assert "embedding" not in event
     assert "bbox" not in event
+
+
+def test_multiple_face_boxes_are_available_only_for_in_memory_display() -> None:
+    boxes = ((5.0, 5.0, 35.0, 45.0), (55.0, 10.0, 90.0, 50.0))
+    observation = EmbeddingObservation(
+        2,
+        None,
+        None,
+        None,
+        "multiple_faces",
+        boxes,
+    )
+    verifier = VideoVerifier(
+        analyzer=_Analyzer([observation]),
+        pad_model=_Pad([0.9]),
+        gallery=_Gallery(),  # type: ignore[arg-type]
+        policy=_policy(),
+        model_version="test",
+    )
+
+    result = verifier.process(_frame(), 1000.0)
+
+    assert result.reason == "multiple_faces"
+    assert result.face_boxes_xyxy == boxes
+    event = result.event()
+    assert "face_boxes_xyxy" not in event
+    assert "bbox" not in event

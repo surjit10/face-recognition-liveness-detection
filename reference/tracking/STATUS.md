@@ -1,9 +1,9 @@
 # FaceGuard AI v2 — Implementation Status
 
-**Last updated:** 25 October 2026, 21:05 IST
+**Last updated:** 26 October 2026, 00:14 IST
 **Blueprint:** v1.1
 **Canonical tracker:** [`progress.yaml`](progress.yaml)
-**Active phase:** P0 — repository, data, permission, and environment audit
+**Active phase:** P4 — live runtime, queueing, and target-hardware performance
 
 ## Current progress
 
@@ -11,11 +11,11 @@
 |---|---:|---:|---:|---|
 | P0 — Audit and governance | 10 / 12 | 2 | 83.3% | In progress |
 | P1 — Face recognition | 10 / 10 | 0 | 100.0% | Complete |
-| P2 — Anti-spoofing | 0 / 11 | 11 | 0.0% | Artifact verification in progress |
-| P3 — Integrated video pipeline | 0 / 8 | 8 | 0.0% | Scaffolding in progress |
-| P4 — Live runtime and benchmarks | 0 / 8 | 8 | 0.0% | Scaffolding in progress |
-| P5 — Release engineering | 0 / 10 | 10 | 0.0% | Not started |
-| **Overall** | **20 / 59** | **39** | **33.9%** | **In progress** |
+| P2 — Anti-spoofing | 0 / 11 | 11 | 0.0% | Frozen prototype baseline |
+| P3 — Integrated video pipeline | 8 / 8 | 0 | 100.0% | Complete |
+| P4 — Live runtime and benchmarks | 4 / 8 | 4 | 50.0% | In progress |
+| P5 — Release engineering | 10 / 10 | 0 | 100.0% | Complete |
+| **Overall** | **42 / 59** | **17** | **71.2%** | **In progress** |
 
 This percentage measures verified implementation tasks, not effort, elapsed time, lines of code, or model quality. Blocked tasks remain incomplete. See the canonical YAML for every task, dependency, and evidence path.
 
@@ -35,10 +35,24 @@ This percentage measures verified implementation tasks, not effort, elapsed time
 12. Validation-only calibration selected cosine threshold `0.6713641882`; the held-out exploratory test observed 5/280 unknown-person false accepts.
 13. The official `buffalo_m` ZIP and extracted SCRFD/ArcFace files match their frozen SHA-256 values.
 14. The complete CPU runtime loaded without a camera and a fresh private enrollment-image query returned the expected identity.
+15. Camera automatic reconnect with clean shutdown, bounded retries and verification state invalidation (`scripts/run_demo.py`, `tests/unit/test_camera_reconnect.py`).
+16. Persistent biometric gallery deletion, dry-run, inspection, and sidecar sync CLI (`scripts/manage_gallery.py`, `tests/unit/test_manage_gallery.py`).
+17. Schema-valid concrete release manifest generator with artifact and lock hashing (`scripts/generate_release_manifest.py`, `tests/unit/test_release_manifest.py`).
+18. Atomic release switching, deployment lock, and rollback manager (`scripts/manage_release.py`, `tests/unit/test_manage_release.py`).
+19. Release promotion and sign-off CLI with scope gating (`scripts/promote_release.py`, `tests/unit/test_promote_release.py`).
+20. Container deployment orchestration with Docker Compose, non-root user, read-only mounts, and launcher script (`deployment/docker-compose.yml`, `deployment/run_container.sh`, `tests/unit/test_container_deployment.py`).
+21. Private model verification script and self-hosted CI workflow (`scripts/verify_private_models.py`, `.github/workflows/ci_private.yml`, `tests/unit/test_verify_private_models.py`).
+22. Sequential video pipeline full phase completion (P3-01 through P3-08): single-face gates, short-lived IoU tracking, rolling temporal median PAD aggregation, fail-closed PAD-before-recognition state machine, sequential MP4 reader without frame dropping, and end-to-end integration test suite (`tests/integration/test_sequential_video_pipeline.py`) covering enrolled identity, unknown identity, spoof attack fail-closed rejection, empty scene, multiple faces, and stream interruption.
+23. Strict privacy verification across video pipeline: assertions confirm zero raw frames, crops, embeddings, or tensors are exposed in event streams or logs.
+24. Runtime queue capacity stress and bounded-memory verification under burst traffic (`tests/unit/test_runtime.py`).
+25. A centralized single-window desktop application performs automatic readiness checks, live in-memory preview, complete fail-closed analysis and aggregate diagnostics through shared bootstrap/session services (`scripts/run_app.py`, `src/faceguard/ui/`, `tests/unit/test_session.py`).
+26. Minimal CPU runtime container image built (`faceguard-runtime:prototype`, image ID `75046ef8bef4`) and headless readiness check verified on local Docker daemon (`deployment/run_container.sh smoke`, `reports/phase_receipts/container_smoke.json`).
+27. Strict Git-ignored desktop display aliases preserve canonical gallery IDs and structured-event values while allowing authorized local operator labels (`src/faceguard/identity_labels.py`, `tests/unit/test_identity_labels.py`).
+28. Memory-only face-localized overlays label an accepted single face, point to every detected face in multi-face scenes without running identity matching, and present below-threshold PAD as `LIVENESS NOT CONFIRMED` rather than a confirmed-attack claim (`src/faceguard/presentation.py`, `src/faceguard/ui/live_view.py`, `tests/unit/test_presentation.py`).
 
 Runtime implementation now includes a protected gallery, validation-only recognition
 threshold selector, hash-verified PAD ONNX loader, PAD-before-recognition state
-machine, bounded latest-frame queue and strict CLI configuration. All 68 automated
+machine, bounded latest-frame queue, live camera auto-reconnect, centralized desktop interface, Docker container deployment, and strict configuration. All 127 automated
 tests pass and all configured models load on the local CPU environment. These are
 phase receipts, not a production-release claim.
 
@@ -53,13 +67,19 @@ closes cleanly, and CI now runs `pip check`, the test suite and a tracked-artifa
 credential scan. The release manifest, DVC/MLflow/container work and private-runner
 readiness checks remain open.
 
+The recommended operator entry point is now `scripts/run_app.py`. Its Tkinter/Pillow
+interface keeps UI work on the main thread, camera capture and inference in bounded
+workers, and reuses the existing `VideoVerifier` without duplicating or bypassing
+biometric decisions. A camera-free real-window smoke test passed; no camera was opened
+during that verification.
+
 These items do not mean session semantics, splits, the complete runtime environment,
 recognition thresholds, target-camera PAD robustness, or release readiness are verified.
 The recorded benchmark session contained no face, so it measures capture and detection
 only; PAD and recognition latency were not exercised.
 
-Work in progress without completion credit: sequential-video regressions, the five
-deferred camera acceptance cases, a full-path benchmark with the operator in frame, PAD
+Work in progress without completion credit: the five deferred camera acceptance cases,
+a full-path benchmark with the operator in frame, PAD
 manifest retrieval and Kaggle/CI preflights remain pending.
 
 ## Immediate blockers

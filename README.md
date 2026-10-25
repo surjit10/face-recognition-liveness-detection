@@ -52,6 +52,7 @@ Do not install arbitrary package versions or download model weights from mirrors
 
 Current developer entry points:
 
+- `scripts/run_app.py` for the centralized local desktop interface.
 - `docs/EMBEDDING_EXTRACTION.md` for local audit and candidate embeddings.
 - `docs/KAGGLE_EMBEDDING_RUNBOOK.md` for private Kaggle extraction.
 - `scripts/preflight.py` before any environment change.

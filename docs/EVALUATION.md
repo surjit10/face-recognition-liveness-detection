@@ -89,7 +89,7 @@ passes, and never tune thresholds using these cases.
 |---|---|---|---|
 | A | Enrolled user `000` | PAD passes; identity becomes `000` | Pending |
 | B | Person absent from gallery | `UNKNOWN`; never another identity | Pending |
-| C | Printed photo or phone display | `SPOOF` or fail-closed | Pending |
+| C | Printed photo or phone display | `LIVENESS NOT CONFIRMED` (internal `PAD_FAILED`) or another fail-closed result | Pending |
 | D | Empty scene | `NO FACE`; no identity | Pending |
 | E | Two or more faces | `MULTIPLE FACES`; no identity | Pending |
 

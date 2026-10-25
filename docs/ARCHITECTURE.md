@@ -11,7 +11,7 @@ flowchart LR
     A[Camera frame<br/>index 0] --> B[SCRFD detector<br/>exactly one face]
     B --> C[Quality and continuity gate<br/>size, exposure, blur, IoU]
     C --> D[Temporal PAD<br/>MobileNetV3, 8 observations]
-    D -->|median below threshold| E[SPOOF]
+    D -->|median below threshold| E[LIVENESS NOT CONFIRMED]
     D -->|median passes| F[ArcFace 512-d embedding]
     F --> G[Gallery cosine search<br/>vectorized matrix @ query]
     G -->|score and margin pass| H[VERIFIED: pseudonymous ID]
@@ -29,7 +29,7 @@ face, so it cannot produce an identity on a frame that PAD rejected.
 
 | Stage | Implementation | Contract |
 |---|---|---|
-| Capture | `scripts/run_demo.py` | Camera `0` only. A bounded latest-frame queue drops the oldest waiting frame; processing delay cannot grow without bound. |
+| Capture | `src/faceguard/session.py`, `scripts/run_demo.py` | Camera `0` only. A bounded latest-frame queue drops the oldest waiting frame; processing delay cannot grow without bound. |
 | Detection | `InsightFaceEmbedder` with `buffalo_m` SCRFD `det_2.5g.onnx` | Exactly one detected face; zero or multiple faces reset the track and fail closed. |
 | Quality gate | `VideoVerifier._quality_reason` | Detection score ≥ `0.6`, face box ≥ `80 px`, mean brightness in `[40, 215]`, Laplacian variance ≥ `40`. Failures produce a retry state. |
 | Continuity | `VideoVerifier` IoU track | The same face must overlap the previous box with IoU ≥ `0.3` within `500 ms`; otherwise the PAD evidence is reset and a new track starts. |
@@ -43,10 +43,10 @@ face, so it cannot produce an identity on a frame that PAD rejected.
 | Overlay | Pipeline state/status | Meaning |
 |---|---|---|
 | `NO FACE` | `RETRY` / `retry` | No single face is available; no identity is possible. |
-| `MULTIPLE FACES` | `RETRY` / `retry` | More than one face is visible; the frame is rejected. |
+| `MULTIPLE FACES` | `RETRY` / `retry` | More than one face is visible; each detected face is boxed for operator guidance, but identities are not checked. |
 | `HOLD STILL` | `RETRY` / `retry` | Quality, continuity, timing or model check failed; present one steady, well-lit face. |
 | `CHECKING LIVENESS` | `COLLECTING_PAD` | PAD observations are being collected; identity matching has not run. |
-| `SPOOF` | `PAD_FAILED` / `spoof` | Median liveness is below threshold; recognition is never called. |
+| `LIVENESS NOT CONFIRMED` | `PAD_FAILED` / `spoof` | Median liveness is below threshold. The UI avoids claiming a confirmed attack; recognition is never called. |
 | `UNKNOWN` | `UNKNOWN` / `unknown` | PAD passed but the gallery score or margin did not accept an identity. This is a valid fail-closed result. |
 | `VERIFIED: <ID>` | `IDENTIFIED` / `verified` | PAD passed and the gallery accepted the pseudonymous enrollment label. |
 
@@ -67,6 +67,27 @@ sent to it. Closing the window stops the pipeline through the same clean-shutdow
 as `q`/`Esc`; a Tk failure degrades to the OpenCV preview with a warning. The default
 OpenCV preview remains the video surface, so the dashboard is additive rather than a
 replacement UI.
+
+## Centralized desktop interface
+
+`scripts/run_app.py` is the recommended interactive entry point. It uses the shared
+runtime factory in `src/faceguard/bootstrap.py`, the bounded capture/inference session
+in `src/faceguard/session.py`, and pure operator-message mappings in
+`src/faceguard/presentation.py`. Tkinter remains on the main thread while camera
+capture and inference run in separate bounded workers. The UI receives only the newest
+in-memory display frame and result, so a slow renderer cannot create an unbounded frame
+history.
+
+The desktop app automatically checks model/gallery hashes and providers before it
+enables **Start camera**. It never opens the camera on application launch, and it does
+not expose controls that bypass PAD, change thresholds, train models, record frames or
+perform single-image liveness decisions.
+
+Face boxes are presentation-only data attached to an in-memory result and are never
+included in `VerificationResult.event()`. A single verified face receives its accepted
+local display label. Multiple faces receive numbered `IDENTITY NOT CHECKED` boxes;
+per-face identification is deliberately withheld because the current verifier has one
+PAD evidence track and one identity decision per session.
 
 ## Configuration and startup integrity
 

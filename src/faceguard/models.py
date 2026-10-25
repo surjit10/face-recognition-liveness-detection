@@ -22,6 +22,7 @@ class EmbeddingObservation:
     detection_score: float | None
     bbox_xyxy: tuple[float, float, float, float] | None
     error: str | None
+    face_boxes_xyxy: tuple[tuple[float, float, float, float], ...] = ()
 
 
 class InsightFaceEmbedder:
@@ -117,9 +118,27 @@ class InsightFaceEmbedder:
         image_bgr = np.ascontiguousarray(image_rgb[:, :, ::-1])
         faces = self._app.get(image_bgr)
         face_count = len(faces)
+        face_boxes: list[tuple[float, float, float, float]] = []
+        for detected_face in faces:
+            bbox_array = np.asarray(
+                getattr(detected_face, "bbox", None), dtype=np.float32
+            ).reshape(-1)
+            if bbox_array.shape != (4,) or not np.isfinite(bbox_array).all():
+                continue
+            bbox = tuple(float(value) for value in bbox_array)
+            if bbox[2] > bbox[0] and bbox[3] > bbox[1]:
+                face_boxes.append(bbox)
+        observed_boxes = tuple(face_boxes)
         if face_count != 1:
             error = "no_face" if face_count == 0 else "multiple_faces"
-            return EmbeddingObservation(face_count, None, None, None, error)
+            return EmbeddingObservation(
+                face_count,
+                None,
+                None,
+                None,
+                error,
+                observed_boxes,
+            )
 
         face = faces[0]
         raw = getattr(face, "embedding", None)
@@ -135,11 +154,17 @@ class InsightFaceEmbedder:
             return EmbeddingObservation(1, None, None, None, "embedding_zero_norm")
         embedding = np.ascontiguousarray(embedding / norm, dtype=np.float32)
 
-        bbox_array = np.asarray(face.bbox, dtype=np.float32).reshape(-1)
-        if bbox_array.shape != (4,) or not np.isfinite(bbox_array).all():
+        if len(observed_boxes) != 1:
             return EmbeddingObservation(1, None, None, None, "bbox_invalid")
-        bbox = tuple(float(value) for value in bbox_array)
+        bbox = observed_boxes[0]
         detection_score = float(face.det_score)
         if not np.isfinite(detection_score):
             return EmbeddingObservation(1, None, None, None, "detect_score_invalid")
-        return EmbeddingObservation(1, embedding, detection_score, bbox, None)
+        return EmbeddingObservation(
+            1,
+            embedding,
+            detection_score,
+            bbox,
+            None,
+            observed_boxes,
+        )

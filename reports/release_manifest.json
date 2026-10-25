@@ -1,0 +1,114 @@
+{
+  "artifacts": {
+    "detector": {
+      "relative_path": "models/private/insightface/models/buffalo_m/det_2.5g.onnx",
+      "sha256": "041f73f47371333d1d17a6fee6c8ab4e6aecabefe398ff32cca4e2d5eaee0af9"
+    },
+    "gallery": {
+      "relative_path": "models/private/gallery/gallery.npz",
+      "sha256": "1cfa5694135edefe768b0c929b72f7b1127d68f885194c633e9c91eeceed7465"
+    },
+    "pad_onnx": {
+      "relative_path": "models/private/pad_candidate/mobilenetv3_pad.onnx",
+      "sha256": "bd8bcc251df7b09285893f51dc35a3f7bd3d6e78c4be5641f49a4130f30e1359"
+    },
+    "recognizer": {
+      "relative_path": "models/private/insightface/models/buffalo_m/w600k_r50.onnx",
+      "sha256": "4c06341c33c2ca1f86781dab0e829f88ad5b64be9fba56e56bc9ebdefc619e43"
+    }
+  },
+  "configuration": {
+    "face": {
+      "min_top1_top2_margin": 0.0,
+      "threshold": 0.6713641881942749
+    },
+    "pad": {
+      "crop_scale": 1.3,
+      "input_size": 224,
+      "max_clipped_fraction": 0.2,
+      "mean": [
+        0.485,
+        0.456,
+        0.406
+      ],
+      "std": [
+        0.229,
+        0.224,
+        0.225
+      ],
+      "threshold": 0.7626009583473206
+    },
+    "providers": [
+      "CPUExecutionProvider"
+    ],
+    "runtime": {
+      "frame_queue_size": 2,
+      "max_mean_brightness": 215.0,
+      "max_track_gap_ms": 500.0,
+      "min_blur_variance": 40.0,
+      "min_detection_score": 0.6,
+      "min_face_size_px": 80,
+      "min_iou": 0.3,
+      "min_mean_brightness": 40.0,
+      "pad_min_observations": 8
+    }
+  },
+  "created_at": "2026-10-25T17:32:37.033854+00:00",
+  "environment": {
+    "python": "3.12.3",
+    "runtime_lock_sha256": "2e03c24b6fbe909d03b1829c103da5c967bfcf948575123aae0c15ffb68891a3"
+  },
+  "git": {
+    "clean": false,
+    "commit": "970073ef33fb566c907256617175ab27148d7f99",
+    "uncommitted_files": [
+      "M deployment/README.md",
+      "M dvc.lock",
+      "M reference/tracking/STATUS.md",
+      "M reference/tracking/progress.yaml",
+      "M reports/environments/runtime_readiness.json",
+      "M reports/phase_receipts/artifact_scan.txt",
+      "M scripts/run_demo.py",
+      "M tests/unit/test_scan_artifacts.py",
+      "?? .github/workflows/ci_private.yml",
+      "?? deployment/docker-compose.yml",
+      "?? deployment/run_container.sh",
+      "?? scripts/generate_release_manifest.py",
+      "?? scripts/manage_gallery.py",
+      "?? scripts/manage_release.py",
+      "?? scripts/promote_release.py",
+      "?? scripts/verify_private_models.py",
+      "?? tests/unit/test_camera_reconnect.py",
+      "?? tests/unit/test_container_deployment.py",
+      "?? tests/unit/test_manage_gallery.py",
+      "?? tests/unit/test_manage_release.py",
+      "?? tests/unit/test_promote_release.py",
+      "?? tests/unit/test_release_manifest.py",
+      "?? tests/unit/test_verify_private_models.py"
+    ]
+  },
+  "release_id": "faceguard-v2-development",
+  "reports": {
+    "prototype_camera_benchmark": {
+      "relative_path": "reports/benchmarks/prototype_camera.json",
+      "sha256": "897026fe5eeafced49d918ec70afcab1b2f53b7d13f3a453743a98a4119a27e1"
+    },
+    "readiness": {
+      "relative_path": "reports/environments/runtime_readiness.json",
+      "sha256": "014308eef73764eaebaabc819379b73f8c4ab065887b1c49a020d0f1b1934e8c"
+    },
+    "recognition_test": {
+      "relative_path": "reports/evaluation/recognition_test.json",
+      "sha256": "8bfe75082f684941f8eecb102763f4ec754d41dc5067832365dbc1f8882c81ee"
+    },
+    "recognition_threshold": {
+      "relative_path": "reports/evaluation/recognition_threshold.json",
+      "sha256": "e7fb9a21287705a4a340b6b73617591cd2d98f0b3807bcca3133070d6f735705"
+    },
+    "recognition_validation": {
+      "relative_path": "reports/evaluation/recognition_validation.json",
+      "sha256": "651b9e97069c7f6d69aa040f8b87fa840ef2856fbf95048bbb348d3a2a0e70ce"
+    }
+  },
+  "schema_version": 1
+}
