@@ -1,8 +1,25 @@
 schema_version: 1
 project_id: faceguard-ai-v2
-last_updated: "2026-10-25T19:08:00+05:30"
+last_updated: "2026-10-25T20:00:00+05:30"
 allowed_states: [UNRESOLVED, DISCOVERED, VERIFIED, FROZEN]
 decisions:
+  - id: PROTOTYPE_SCOPE
+    state: FROZEN
+    value:
+      no_further_training: true
+      baseline_models_frozen: true
+      academic_prototype_only: true
+    evidence:
+      - reference/1-reference.md
+      - configs/runtime.yaml
+    decided_by: user_authorization
+    decided_at: "2026-10-25T20:00:00+05:30"
+    applies_to:
+      - configs/runtime.yaml
+      - models/private/insightface
+      - models/private/pad_candidate/mobilenetv3_pad.onnx
+      - models/private/gallery/gallery.npz
+    notes: "Prototype scope frozen: InsightFace buffalo_m, MobileNetV3 PAD, and 187-identity gallery are the final baseline."
   - id: FRAD_PERMISSION
     state: VERIFIED
     value:

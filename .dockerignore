@@ -1,0 +1,16 @@
+.git
+.github
+.venv
+.venv-mlops
+.pytest_cache
+__pycache__
+*.pyc
+models
+data
+reports
+mlruns
+.dvc
+notebooks
+reference
+tests
+docs

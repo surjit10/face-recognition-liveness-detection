@@ -1,0 +1,47 @@
+schema: '2.0'
+stages:
+  readiness:
+    cmd: .venv/bin/python scripts/run_demo.py --config configs/runtime.yaml 
+      --check-only --readiness-report 
+      reports/environments/runtime_readiness.json
+    deps:
+    - path: configs/runtime.yaml
+      hash: md5
+      md5: 0edebae4642273c779a475639f2c5b31
+      size: 1438
+    - path: models/private
+      hash: md5
+      md5: a51eb19bc3214edad4fcfdefd1529c27.dir
+      size: 209180436
+      nfiles: 12
+    - path: scripts/run_demo.py
+      hash: md5
+      md5: 7fe78f557155325a223b1b36dcdaad8b
+      size: 12824
+    - path: src/faceguard
+      hash: md5
+      md5: af1fc7ca95d02f1f26dd8c924256ff02.dir
+      size: 381723
+      nfiles: 34
+    outs:
+    - path: reports/environments/runtime_readiness.json
+      hash: md5
+      md5: 9feb41482b31fe3cea97e1de02398818
+      size: 762
+  scan:
+    cmd: .venv/bin/python scripts/scan_artifacts.py > 
+      reports/phase_receipts/artifact_scan.txt
+    deps:
+    - path: .gitignore
+      hash: md5
+      md5: ac56dac71b7d56ae0703e4a3eccd6112
+      size: 910
+    - path: scripts/scan_artifacts.py
+      hash: md5
+      md5: 98ed6760365570959a1f141810e3401c
+      size: 2946
+    outs:
+    - path: reports/phase_receipts/artifact_scan.txt
+      hash: md5
+      md5: 1910c8235e4ea6316d09ea1e642acf6c
+      size: 58

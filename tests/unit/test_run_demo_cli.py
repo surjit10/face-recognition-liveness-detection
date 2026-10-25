@@ -36,3 +36,10 @@ def test_readiness_report_requires_check_only() -> None:
 
     assert result.returncode == 2
     assert "--readiness-report requires --check-only" in result.stderr
+
+
+def test_metrics_ui_rejects_check_only() -> None:
+    result = _run("--check-only", "--metrics-ui")
+
+    assert result.returncode == 2
+    assert "--metrics-ui cannot be combined" in result.stderr

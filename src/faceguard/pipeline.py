@@ -82,6 +82,7 @@ class VerificationResult:
     model_version: str
     reason: str
     latency_ms: float
+    pad_observations: int = 0
 
     def event(self) -> dict[str, object]:
         """Return a log-safe event; frames and embeddings are intentionally absent."""
@@ -95,6 +96,7 @@ class VerificationResult:
             "model_version": self.model_version,
             "reason": self.reason,
             "latency_ms": self.latency_ms,
+            "pad_observations": self.pad_observations,
         }
 
 
@@ -167,6 +169,7 @@ class VideoVerifier:
             model_version=self.model_version,
             reason=reason,
             latency_ms=(time.perf_counter() - started) * 1000.0,
+            pad_observations=len(self._pad_scores),
         )
 
     def _retry_and_reset(self, started: float, reason: str) -> VerificationResult:
@@ -183,6 +186,7 @@ class VideoVerifier:
             model_version=self.model_version,
             reason=reason,
             latency_ms=(time.perf_counter() - started) * 1000.0,
+            pad_observations=len(self._pad_scores),
         )
 
     def _quality_reason(
@@ -271,6 +275,7 @@ class VideoVerifier:
                 model_version=self.model_version,
                 reason="cached_continuous_track",
                 latency_ms=(time.perf_counter() - started) * 1000.0,
+                pad_observations=cached.pad_observations,
             )
 
         try:

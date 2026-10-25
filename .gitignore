@@ -10,6 +10,7 @@ htmlcov/
 
 # Virtual environments and local configuration
 .venv/
+.venv-mlops/
 venv/
 env/
 .env
@@ -52,6 +53,7 @@ Thumbs.db
 
 # Experiment and build outputs
 /mlruns/
+/mlflow.db
 /.dvc/cache/
 /.ipynb_checkpoints/
 /dist/

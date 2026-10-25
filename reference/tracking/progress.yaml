@@ -1,7 +1,7 @@
 schema_version: 1
 project_id: faceguard-ai-v2
 blueprint_version: "1.1"
-last_updated: "2026-10-25T19:08:00+05:30"
+last_updated: "2026-10-25T21:05:00+05:30"
 source_of_truth: reference/FaceGuard_AI_Implementation_Blueprint.md
 status_values:
   - NOT_STARTED
@@ -17,7 +17,7 @@ summary:
   remaining_tasks: 39
   blocked_tasks: 0
   completion_percent: 33.9
-  next_gate: "Run sequential spoof, unknown, enrolled, no-face, multi-face, and interruption video regressions before camera benchmarking."
+  next_gate: "Complete the five deferred camera acceptance cases, then re-run the benchmark with the operator in frame and review the final prototype handoff."
 
 phases:
   - id: P0
@@ -527,6 +527,23 @@ phases:
           - P5-09
 
 change_log:
+  - timestamp: "2026-10-25T21:05:00+05:30"
+    actor: buffy
+    change: "Added an opt-in isolated-process Tkinter metrics dashboard (processed FPS, frame age, pipeline latency, captured/dropped counts, PAD observations, elapsed time, fail-closed state) with clean window-close shutdown; exposed non-biometric PAD observation counts in pipeline events; added a CI workflow that runs pip check, 68 tests and the artifact scan; added a tracked-artifact/credential scanner. All 68 tests, pip check, camera-free readiness and the artifact scan pass. No completion counts changed: CI does not yet run private ONNX-load/readiness checks (P5-03), the scanner is not a full release audit (P5-07), and PAD/release blockers remain."
+    affected_tasks:
+      - P4-03
+      - P4-04
+      - P5-03
+      - P5-07
+  - timestamp: "2026-10-25T20:15:00+05:30"
+    actor: buffy
+    change: "Froze PROTOTYPE_SCOPE (no further training, baseline models frozen, academic prototype only), finalized concise overlay messages and state-change-only reporting, added exit-code-2 handling for camera open/read failures and verified clean q/Esc/Ctrl+C shutdown, added an aggregate benchmark utility and receipt, and wrote the five public-safe prototype documents. Verification: pip check and 61 tests pass; readiness reports runtime_ready with frozen hashes. No task completion counts changed: P5-08 remains blocked by the missing release manifest (P5-05), and target-camera acceptance remains deferred."
+    affected_tasks:
+      - P3-05
+      - P4-03
+      - P4-04
+      - P4-07
+      - P5-08
   - timestamp: "2026-10-25T19:08:00+05:30"
     actor: codex
     change: "Downloaded the official buffalo_m release ZIP, verified the package and extracted model hashes, recorded the user's model-terms acknowledgment, loaded SCRFD/ArcFace/PAD/gallery on the pinned CPU provider, passed a privacy-safe fresh-image gallery query, added camera-free readiness reporting, and passed 50 tests including state-change-only runtime reporting. P1 is complete; sequential-video and broader camera validation are still pending."

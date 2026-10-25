@@ -1,0 +1,7 @@
+.venv/
+.venv-mlops/
+data/processed/
+reports/private/
+mlruns/
+notebooks/
+reference/archive/

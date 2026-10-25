@@ -1,6 +1,6 @@
 # FaceGuard AI v2 — Implementation Status
 
-**Last updated:** 25 October 2026, 19:08 IST
+**Last updated:** 25 October 2026, 21:05 IST
 **Blueprint:** v1.1
 **Canonical tracker:** [`progress.yaml`](progress.yaml)
 **Active phase:** P0 — repository, data, permission, and environment audit
@@ -38,15 +38,29 @@ This percentage measures verified implementation tasks, not effort, elapsed time
 
 Runtime implementation now includes a protected gallery, validation-only recognition
 threshold selector, hash-verified PAD ONNX loader, PAD-before-recognition state
-machine, bounded latest-frame queue and strict CLI configuration. All 50 automated
+machine, bounded latest-frame queue and strict CLI configuration. All 68 automated
 tests pass and all configured models load on the local CPU environment. These are
 phase receipts, not a production-release claim.
 
+The prototype scope is now frozen in `configs/decisions.yaml` (`PROTOTYPE_SCOPE`): no
+further training, baseline models/gallery/thresholds fixed, academic demonstration only.
+The runtime has concise fail-closed overlay messages and state-change-only events, exits
+`2` on camera open/read failure, and releases the camera on `q`, `Esc` and `Ctrl+C`.
+Aggregate benchmark evidence exists at `reports/benchmarks/prototype_camera.json`, and
+public-safe documentation (including MLOps status) is in `docs/`. An opt-in
+`--metrics-ui` dashboard runs in an isolated process with a dark metrics layout and
+closes cleanly, and CI now runs `pip check`, the test suite and a tracked-artifact /
+credential scan. The release manifest, DVC/MLflow/container work and private-runner
+readiness checks remain open.
+
 These items do not mean session semantics, splits, the complete runtime environment,
 recognition thresholds, target-camera PAD robustness, or release readiness are verified.
+The recorded benchmark session contained no face, so it measures capture and detection
+only; PAD and recognition latency were not exercised.
 
-Work in progress without completion credit: Kaggle/CI preflights, sequential-video
-regressions, target-camera validation and performance benchmarking remain pending.
+Work in progress without completion credit: sequential-video regressions, the five
+deferred camera acceptance cases, a full-path benchmark with the operator in frame, PAD
+manifest retrieval and Kaggle/CI preflights remain pending.
 
 ## Immediate blockers
 
@@ -59,9 +73,10 @@ P2 is additionally blocked until an authorized labeled PAD dataset and its label
 
 ## Next permitted work
 
-1. Run sequential spoof/unknown/enrolled/no-face/multi-face MP4 tests before live webcam benchmarking.
-2. Retrieve and verify the PAD train/validation/test manifests from the training run.
-3. Evaluate target-camera attacks and unknown people before any production claim.
+1. Perform the five deferred camera acceptance cases (A–E) and record pass/fail without tuning thresholds.
+2. Re-run the benchmark with the operator in frame to measure PAD and recognition latency.
+3. Retrieve and verify the PAD train/validation/test manifests from the training run.
+4. Evaluate target-camera attacks and unknown people before any production claim.
 
 Model training, gallery generation, cloud upload and release claims remain prohibited until their blueprint gates pass.
 

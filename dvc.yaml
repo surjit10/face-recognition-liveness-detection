@@ -1,0 +1,20 @@
+stages:
+  readiness:
+    cmd: .venv/bin/python scripts/run_demo.py --config configs/runtime.yaml --check-only --readiness-report reports/environments/runtime_readiness.json
+    deps:
+      - src/faceguard
+      - scripts/run_demo.py
+      - configs/runtime.yaml
+      - models/private
+    outs:
+      - reports/environments/runtime_readiness.json:
+          cache: false
+
+  scan:
+    cmd: .venv/bin/python scripts/scan_artifacts.py > reports/phase_receipts/artifact_scan.txt
+    deps:
+      - scripts/scan_artifacts.py
+      - .gitignore
+    outs:
+      - reports/phase_receipts/artifact_scan.txt:
+          cache: false

@@ -1,0 +1,4 @@
+# Isolated MLOps environment; never install these into the runtime .venv.
+dvc==3.67.1
+mlflow==3.17.2
+PyYAML==6.0.3
