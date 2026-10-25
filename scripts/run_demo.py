@@ -4,9 +4,12 @@
 from __future__ import annotations
 
 import argparse
+from datetime import datetime, timezone
 import json
+import os
 import queue
 import sys
+import tempfile
 import threading
 import time
 from pathlib import Path
@@ -58,7 +61,7 @@ def build_verifier(config_path: Path):
 
 
 def render_and_report(frame, result, sequence: int, no_display: bool, last_state):
-    if result.state != last_state or result.status in {"verified", "unknown", "spoof"}:
+    if result.state != last_state:
         event = {"sequence": sequence, **result.event()}
         print(json.dumps(event, sort_keys=True), flush=True)
         last_state = result.state
@@ -79,23 +82,83 @@ def render_and_report(frame, result, sequence: int, no_display: bool, last_state
     return last_state, stop
 
 
-def main() -> int:
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", type=Path, default=PROJECT_ROOT / "configs/runtime.yaml")
-    source = parser.add_mutually_exclusive_group(required=True)
+    source = parser.add_mutually_exclusive_group()
     source.add_argument("--video", type=Path)
     source.add_argument("--camera", type=int)
     parser.add_argument("--no-display", action="store_true")
-    args = parser.parse_args()
+    parser.add_argument(
+        "--check-only",
+        action="store_true",
+        help="load and verify all runtime artifacts without opening a video source",
+    )
+    parser.add_argument(
+        "--readiness-report",
+        type=Path,
+        help="atomically save the --check-only JSON receipt",
+    )
+    args = parser.parse_args(argv)
+    if args.check_only and (args.video is not None or args.camera is not None):
+        parser.error("--check-only cannot be combined with --video or --camera")
+    if not args.check_only and args.video is None and args.camera is None:
+        parser.error("one of --video or --camera is required unless --check-only is used")
+    if args.readiness_report is not None and not args.check_only:
+        parser.error("--readiness-report requires --check-only")
+    return args
+
+
+def main() -> int:
+    args = parse_args()
     try:
         verifier, config = build_verifier(args.config)
     except (ConfigurationError, GalleryError, ModelPackError, PadInferenceError) as exc:
-        parser.exit(2, f"runtime startup blocked: {exc}\n")
+        print(f"runtime startup blocked: {exc}", file=sys.stderr)
+        return 2
+
+    if args.check_only:
+        report = {
+            "schema_version": 1,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "event": "runtime_ready",
+            "release_id": config.release_id,
+            "providers": list(config.providers),
+            "face_pack": config.insightface_pack,
+            "face_runtime_providers": {
+                name: list(providers)
+                for name, providers in verifier.analyzer.runtime_providers.items()
+            },
+            "verified_face_model_hashes": verifier.analyzer.model_hashes,
+            "pad_model_sha256": verifier.pad_model.model_sha256,
+            "gallery_vectors": verifier.gallery.size,
+            "gallery_identities": verifier.gallery.identity_count,
+            "camera_opened": False,
+        }
+        rendered = json.dumps(report, indent=2, sort_keys=True) + "\n"
+        print(rendered, end="")
+        if args.readiness_report is not None:
+            args.readiness_report.parent.mkdir(parents=True, exist_ok=True)
+            with tempfile.NamedTemporaryFile(
+                mode="w",
+                encoding="utf-8",
+                dir=args.readiness_report.parent,
+                prefix=f".{args.readiness_report.name}.",
+                delete=False,
+            ) as handle:
+                handle.write(rendered)
+                handle.flush()
+                os.fsync(handle.fileno())
+                temporary = Path(handle.name)
+            os.replace(temporary, args.readiness_report)
+        return 0
 
     capture = cv2.VideoCapture(str(args.video) if args.video else args.camera)
     if not capture.isOpened():
-        parser.exit(2, "runtime startup blocked: unable to open video source\n")
+        print("runtime startup blocked: unable to open video source", file=sys.stderr)
+        return 2
     last_state = None
+    interrupted = False
     try:
         if args.video:
             sequence = 0
@@ -165,12 +228,15 @@ def main() -> int:
                         {"event": "capture_summary", "dropped_frames": frames.dropped_frames}
                     )
                 )
+    except KeyboardInterrupt:
+        interrupted = True
+        print(json.dumps({"event": "interrupted", "reason": "keyboard_interrupt"}))
     finally:
         capture.release()
         if not args.no_display:
             cv2.destroyAllWindows()
         print(json.dumps(verifier.end().event(), sort_keys=True))
-    return 0
+    return 130 if interrupted else 0
 
 
 if __name__ == "__main__":

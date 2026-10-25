@@ -1,0 +1,41 @@
+{
+  "limitations": [
+    "Exploratory unknown-session split; not an official benchmark.",
+    "Confidence intervals resample person identities, but sessions/devices are unknown."
+  ],
+  "metrics": {
+    "confidence_intervals": {
+      "impostor_false_positive_identification_rate": {
+        "cluster_unit": "pseudonymous person identity",
+        "lower_95": 0.0,
+        "resamples": 2000,
+        "seed": 42,
+        "upper_95": 0.04460966542750929
+      },
+      "known_identification_failure_rate": {
+        "cluster_unit": "pseudonymous person identity",
+        "lower_95": 0.0215633423180593,
+        "resamples": 2000,
+        "seed": 42,
+        "upper_95": 0.06353591160220995
+      }
+    },
+    "impostor_false_accepts": 5,
+    "impostor_false_positive_identification_rate": 0.017857142857142856,
+    "impostor_searches": 280,
+    "known_correct_accepts": 352,
+    "known_identification_failure_rate": 0.04087193460490468,
+    "known_misidentification_accept_rate": 0.008174386920980926,
+    "known_misidentification_accepts": 3,
+    "known_rejections": 12,
+    "known_searches": 367,
+    "min_top1_top2_margin": 0.0,
+    "threshold": 0.6713641881942749
+  },
+  "official_benchmark": false,
+  "protocol": "test",
+  "schema_version": 1,
+  "score_unit": "one gallery search per probe image",
+  "scores_sha256": "db88cbd36836c0b3b3c34c984dd2f971f74670152d77a4a175854933d2f68a18",
+  "threshold_report_sha256": "e7fb9a21287705a4a340b6b73617591cd2d98f0b3807bcca3133070d6f735705"
+}

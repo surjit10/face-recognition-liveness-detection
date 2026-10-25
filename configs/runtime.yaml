@@ -1,6 +1,6 @@
-# Candidate runtime contract. Production startup intentionally remains blocked
-# until gallery_sha256, recognition threshold, and margin are produced from a
-# frozen enrollment/validation protocol. Do not fill these from test results.
+# Exploratory runtime contract. Gallery and recognition settings were produced
+# from the frozen validation protocol, never from test results. Production startup
+# remains blocked until the official local buffalo_m files pass hash verification.
 schema_version: 1
 release_id: faceguard-v2-development
 providers:
@@ -13,9 +13,9 @@ face:
   recognizer_file: w600k_r50.onnx
   recognizer_sha256: 4c06341c33c2ca1f86781dab0e829f88ad5b64be9fba56e56bc9ebdefc619e43
   gallery_file: models/private/gallery/gallery.npz
-  gallery_sha256: null
-  threshold: null
-  min_top1_top2_margin: null
+  gallery_sha256: 1cfa5694135edefe768b0c929b72f7b1127d68f885194c633e9c91eeceed7465
+  threshold: 0.6713641881942749
+  min_top1_top2_margin: 0.0
 pad:
   file: models/private/pad_candidate/mobilenetv3_pad.onnx
   sha256: bd8bcc251df7b09285893f51dc35a3f7bd3d6e78c4be5641f49a4130f30e1359

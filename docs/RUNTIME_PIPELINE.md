@@ -2,17 +2,28 @@
 
 ## Current status
 
-The maintainable runtime code is implemented and tested, and the PAD candidate is
-installed privately. Production execution remains intentionally blocked until:
+The maintainable runtime code is implemented and tested, the PAD candidate is
+installed privately, and the exploratory recognition protocol/gallery are frozen.
+The official `buffalo_m` ZIP and extracted detector/recognizer files passed their
+frozen hashes. The full CPU runtime and a fresh private-image query loaded successfully
+without opening a camera. Sequential-video and target-camera evaluation remain.
 
-1. the official `buffalo_m` detector and recognizer files are supplied locally;
-2. folder-to-person semantics and an enrollment/validation/test protocol are verified;
-3. a gallery is built from the frozen enrollment manifest;
-4. the recognition threshold and top-1/top-2 margin are calibrated on validation
-   searches and inserted into `configs/runtime.yaml`.
+The source `frad_embeddings.npz` remains an audit artifact. Only the explicitly
+selected enrollment rows were promoted into the protected gallery.
 
-The existing `frad_embeddings.npz` is an audit artifact. It must not be silently
-promoted into a production gallery or used to invent a recognition threshold.
+### Frozen exploratory recognition receipt
+
+- Labels: 234 exact strings (`000`, then `0001` through `0233`), never renumbered.
+- Enrollment: 1,430 vectors across 187 identities.
+- Validation: 367 known probes plus 265 probes from 23 unknown identities.
+- Test: 367 known probes plus 280 probes from 24 different unknown identities.
+- Session/device fields: empty and explicitly unknown; never inferred from filenames.
+- Cosine threshold: `0.6713641881942749`, selected on validation only.
+- Validation unknown FPIR: 0/265; known identification failure: 12/367.
+- Exploratory test unknown FPIR: 5/280 (1.79%); known identification failure: 15/367.
+
+These results are not an official FRAD or cross-session benchmark and are not a
+production security guarantee.
 
 ## Architecture
 
@@ -73,13 +84,26 @@ Download/retrieve the official `buffalo_m` ZIP under its applicable terms, then 
 ```
 
 The installer never downloads weights. It promotes only the detector and recognizer
-after matching the hashes frozen in `configs/decisions.yaml`.
+after first matching the official package SHA-256
+`d98264bd8f2dc75cbc2ddce2a14e636e02bb857b3051c234b737bf3b614edca9`, then matching
+the detector and recognizer hashes frozen in `configs/decisions.yaml`.
 
 ### 3. Freeze recognition manifests
 
 Create explicit enrollment, validation-known, validation-impostor, test-known and
 test-impostor CSVs. A known probe must not reuse an enrollment file hash. Impostor
 identities must not occur in the gallery. Do not infer sessions from filenames.
+
+The current manifests were generated reproducibly with:
+
+```bash
+.venv/bin/python scripts/create_recognition_split.py \
+  --embedding-archive models/private/frad_candidate_embeddings/frad_embeddings.npz \
+  --output-dir data/manifests \
+  --seed 42 \
+  --unknown-identity-fraction 0.2 \
+  --known-probe-fraction 0.2
+```
 
 The enrollment CSV consumed by `build_gallery.py` requires:
 
@@ -144,7 +168,31 @@ Then select the threshold using a declared validation policy:
 The FMR target and margin are project decisions, not defaults. Put the resulting
 threshold and reviewed margin into `configs/runtime.yaml`. Never tune them on test.
 
-### 6. Run sequential video before webcam
+The current exploratory run used `recognition_fmr_bound` with validation FMR bound
+`0.0`. The held-out exploratory test was evaluated afterward using:
+
+```bash
+.venv/bin/python scripts/report_recognition.py \
+  --scores reports/private/recognition_test_scores.csv \
+  --threshold-report reports/evaluation/recognition_threshold.json \
+  --protocol test \
+  --output reports/evaluation/recognition_test.json
+```
+
+### 6. Verify runtime startup without opening a camera
+
+```bash
+.venv/bin/python scripts/run_demo.py \
+  --config configs/runtime.yaml \
+  --check-only \
+  --readiness-report reports/environments/runtime_readiness.json
+```
+
+This loads the hash-pinned SCRFD, ArcFace and PAD ONNX sessions plus the private
+gallery. The JSON receipt must report `"camera_opened": false` and the configured
+CPU provider before any camera permission is requested.
+
+### 7. Run sequential video before webcam
 
 ```bash
 .venv/bin/python scripts/run_demo.py \
@@ -170,3 +218,9 @@ After spoof, unknown, enrolled, no-face, multi-face and interruption MP4 cases p
 
 The current PAD candidate has a test APCER of approximately 20.84%. It is suitable
 for pipeline integration and further evaluation, not a production security claim.
+
+PAD manifest generation and training startup both reject subject, source-hash and
+relative-path overlap across train/validation/test. The returned PAD bundle records
+the three manifest hashes but does not contain the CSV rows, so those CSVs must be
+retrieved from the training run before its subject-disjoint split can be independently
+audited and frozen for release.

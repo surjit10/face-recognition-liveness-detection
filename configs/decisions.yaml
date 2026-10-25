@@ -1,6 +1,6 @@
 schema_version: 1
 project_id: faceguard-ai-v2
-last_updated: "2026-10-25T18:45:00+05:30"
+last_updated: "2026-10-25T19:08:00+05:30"
 allowed_states: [UNRESOLVED, DISCOVERED, VERIFIED, FROZEN]
 decisions:
   - id: FRAD_PERMISSION
@@ -52,21 +52,54 @@ decisions:
       - models/private/frad_candidate_embeddings/frad_embeddings.npz
     notes: "User confirmed each numeric folder contains genuine images of exactly one person."
   - id: FRAD_SESSION_POLICY
-    state: UNRESOLVED
-    value: null
-    evidence: []
-    decided_by: null
-    decided_at: null
-    applies_to: []
-    notes: "Filenames are not authoritative session or device metadata."
+    state: FROZEN
+    value:
+      session_id: unknown
+      device_id: unknown
+      infer_from_filename: false
+      protocol_scope: exploratory_only
+      cross_session_claim_allowed: false
+    evidence:
+      - data/manifests/recognition_split_summary.json
+      - reports/audits/recognition_split_validation.json
+    decided_by: user_authorization
+    decided_at: "2026-10-25T18:47:00+05:30"
+    applies_to:
+      - data/manifests/recognition_enrollment.csv
+      - data/manifests/recognition_val_known.csv
+      - data/manifests/recognition_val_impostor.csv
+      - data/manifests/recognition_test_known.csv
+      - data/manifests/recognition_test_impostor.csv
+    notes: "Session/device fields remain empty and are never inferred; results are not an official or cross-session benchmark."
   - id: FRAD_SPLIT
-    state: UNRESOLVED
-    value: null
-    evidence: []
-    decided_by: null
-    decided_at: null
-    applies_to: []
-    notes: "Must reference explicit frozen manifest rows and hashes."
+    state: FROZEN
+    value:
+      protocol: exploratory_unknown_session_open_set_v1
+      official_benchmark: false
+      seed: 42
+      identities_total: 234
+      identities_enrolled: 187
+      identities_validation_impostor: 23
+      identities_test_impostor: 24
+      samples_total: 2709
+      manifest_sha256:
+        enrollment: 72352c7766c3b584801122a3c331f45a2470d089d51ba0fa839799c4755bd73d
+        validation_known: e48f0cf7368205fc8bcfc3c2a02f6db42d6bf16c6fcd06f0da42a11dfafd420f
+        validation_impostor: 53541b70e18f44e48681a3fd8be9401660b56d7d153e053bd9aca2c4167e3f83
+        test_known: 3c58954014f116f7f2b16c1736828891ed46f7af78026f91885bf126703ecae7
+        test_impostor: 5c7da2c29d641bd955243236bc31ead7c030b557ece4514764c87bb58952d60c
+    evidence:
+      - data/manifests/recognition_split_summary.json
+      - reports/audits/recognition_split_validation.json
+    decided_by: deterministic_split_generator
+    decided_at: "2026-10-25T18:47:00+05:30"
+    applies_to:
+      - data/manifests/recognition_enrollment.csv
+      - data/manifests/recognition_val_known.csv
+      - data/manifests/recognition_val_impostor.csv
+      - data/manifests/recognition_test_known.csv
+      - data/manifests/recognition_test_impostor.csv
+    notes: "All 234 labels are preserved, including 000. Files are hash-disjoint; unknown identity cohorts are person-disjoint."
   - id: PAD_DATASET_PERMISSION
     state: UNRESOLVED
     value: null
@@ -100,7 +133,7 @@ decisions:
     applies_to: []
     notes: "Record preflight before package changes."
   - id: LOCAL_RUNTIME_ENVIRONMENT
-    state: DISCOVERED
+    state: FROZEN
     value:
       python: "3.12.3"
       primary_provider: CPUExecutionProvider
@@ -108,19 +141,25 @@ decisions:
       pip_check: passed
       version_lock: requirements-runtime.lock
       version_lock_sha256: 2e03c24b6fbe909d03b1829c103da5c967bfcf948575123aae0c15ffb68891a3
-      recognition_model_pack_present: false
+      recognition_model_pack_present: true
+      full_runtime_load_smoke: true
+      live_query_compatibility: passed
     evidence:
       - reports/environments/environment_local_runtime.json
+      - reports/environments/runtime_readiness.json
+      - reports/environments/live_query_compatibility.json
       - requirements-runtime.lock
-    decided_by: local_preflight
-    decided_at: "2026-10-25T18:31:18+05:30"
+    decided_by: local_preflight_and_runtime_smoke
+    decided_at: "2026-10-25T19:08:00+05:30"
     applies_to: []
-    notes: "PAD CPU smoke passed; remains DISCOVERED until the face pack, gallery, complete runtime smoke, and platform lock pass."
+    notes: "The pinned local CPU software runtime, face pack, PAD model, gallery, and fresh-image query path passed. Camera hardware and performance targets remain separately unresolved under TARGET_HARDWARE."
   - id: INSIGHTFACE_PACK
     state: VERIFIED
     value:
       selected_pack: buffalo_m
-      source: "https://github.com/deepinsight/insightface/releases/tag/v0.7"
+      source: "https://github.com/deepinsight/insightface/releases/tag/model-zoo"
+      package_file: buffalo_m.zip
+      package_sha256: d98264bd8f2dc75cbc2ddce2a14e636e02bb857b3051c234b737bf3b614edca9
       detector_file: det_2.5g.onnx
       detector_sha256: 041f73f47371333d1d17a6fee6c8ab4e6aecabefe398ff32cca4e2d5eaee0af9
       recognizer_file: w600k_r50.onnx
@@ -128,11 +167,13 @@ decisions:
     evidence:
       - reference/FaceGuard_AI_Implementation_Blueprint.md#3-concrete-models-do-not-mix-model-configurations
       - docs/EMBEDDING_EXTRACTION.md
-    decided_by: official_insightface_release_audit
-    decided_at: "2026-10-24T18:07:00+05:30"
+      - reports/environments/runtime_readiness.json
+      - reports/environments/live_query_compatibility.json
+    decided_by: official_insightface_release_audit_and_local_hash_verification
+    decided_at: "2026-10-25T19:08:00+05:30"
     applies_to:
       - models/private/insightface
-    notes: "Official InsightFace buffalo_m ONNX pack (SCRFD 2.5G + ResNet50 ArcFace)."
+    notes: "User acknowledged the supplied-model non-commercial terms. The official package and extracted SCRFD 2.5G/ResNet50 ArcFace files matched frozen hashes and loaded on CPU."
   - id: PAD_TRAINING_CONFIG
     state: DISCOVERED
     value:
@@ -156,13 +197,26 @@ decisions:
     applies_to: []
     notes: "Choose a blueprint-defined policy before inspecting test results."
   - id: RECOGNITION_THRESHOLD_POLICY
-    state: UNRESOLVED
-    value: null
-    evidence: []
-    decided_by: null
-    decided_at: null
-    applies_to: []
-    notes: "Choose a blueprint-defined policy before inspecting test results."
+    state: FROZEN
+    value:
+      protocol: exploratory_unknown_session_open_set_v1
+      score_unit: one_gallery_search_per_probe_image
+      scoring: maximum_individual_embedding_cosine_per_person
+      policy: recognition_fmr_bound
+      validation_max_fmr: 0.0
+      threshold: 0.6713641881942749
+      min_top1_top2_margin: 0.0
+      threshold_report_sha256: e7fb9a21287705a4a340b6b73617591cd2d98f0b3807bcca3133070d6f735705
+    evidence:
+      - reports/evaluation/recognition_threshold.json
+      - reports/evaluation/recognition_validation.json
+      - reports/evaluation/recognition_test.json
+    decided_by: validation_only_calibration
+    decided_at: "2026-10-25T18:47:00+05:30"
+    applies_to:
+      - models/private/gallery/gallery.npz
+      - configs/runtime.yaml
+    notes: "Exploratory setting only. Test FPIR was 5/280 searches (1.79%); do not claim a production security guarantee."
   - id: TARGET_HARDWARE
     state: UNRESOLVED
     value: null

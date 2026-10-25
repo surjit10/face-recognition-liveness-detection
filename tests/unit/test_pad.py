@@ -14,6 +14,7 @@ from faceguard.pad_manifest import (
     _subject_id,
     load_official_records,
     prepare_celeba_spoof_manifests,
+    validate_pad_split_rows,
 )
 
 
@@ -58,6 +59,54 @@ def test_pad_manifest_balanced_cap() -> None:
     capped = _balanced_cap(records, limit=2, seed=42)
     assert len(capped) == 2
     assert {r.target_live for r in capped} == {0, 1}
+
+
+def test_pad_split_validator_blocks_subject_leakage() -> None:
+    def rows(subject: str, prefix: str) -> list[dict[str, str]]:
+        return [
+            {
+                "subject_id": subject,
+                "relative_path": f"{prefix}/live.jpg",
+                "sha256": ("1" if prefix == "train" else "2") * 64,
+                "target_live": "1",
+            },
+            {
+                "subject_id": subject,
+                "relative_path": f"{prefix}/attack.jpg",
+                "sha256": ("3" if prefix == "train" else "4") * 64,
+                "target_live": "0",
+            },
+        ]
+
+    with pytest.raises(PadManifestError, match="subject leakage"):
+        validate_pad_split_rows(
+            {
+                "train": rows("person-a", "train"),
+                "val": rows("person-a", "val"),
+                "test": rows("person-c", "test"),
+            }
+        )
+
+
+def test_pad_split_validator_accepts_disjoint_subjects() -> None:
+    split_rows = {}
+    for number, name in enumerate(("train", "val", "test"), start=1):
+        split_rows[name] = [
+            {
+                "subject_id": f"person-{name}",
+                "relative_path": f"{name}/live.jpg",
+                "sha256": f"{number:064x}",
+                "target_live": "1",
+            },
+            {
+                "subject_id": f"person-{name}",
+                "relative_path": f"{name}/attack.jpg",
+                "sha256": f"{number + 10:064x}",
+                "target_live": "0",
+            },
+        ]
+    summary = validate_pad_split_rows(split_rows)
+    assert summary["train"]["subjects"] == 1
 
 
 def test_load_official_records_filters_inconsistent_spoof_type(

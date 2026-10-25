@@ -20,6 +20,7 @@ from faceguard.recognition_metrics import (  # noqa: E402
     RecognitionMetricError,
     select_recognition_threshold,
 )
+from faceguard.config import sha256_file  # noqa: E402
 
 
 def _boolean(value: str) -> bool:
@@ -70,6 +71,7 @@ def main() -> int:
             "schema_version": 1,
             "score_unit": "one open-set gallery search per validation probe",
             "source_file": args.validation_scores.name,
+            "validation_scores_sha256": sha256_file(args.validation_scores),
         }
     )
     rendered = json.dumps(report, indent=2, sort_keys=True) + "\n"

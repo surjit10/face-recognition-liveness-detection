@@ -1,0 +1,14 @@
+{
+  "camera_opened": false,
+  "created_at": "2026-10-25T19:07:38+05:30",
+  "embedding_dtype": "float32",
+  "embedding_shape": [
+    512
+  ],
+  "event": "live_query_compatibility_passed",
+  "face_count": 1,
+  "gallery_identities": 187,
+  "privacy": "No image path, image pixels, embedding values, or similarity score recorded.",
+  "schema_version": 1,
+  "top1_is_expected_enrollment_identity": true
+}

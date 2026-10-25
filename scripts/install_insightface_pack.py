@@ -16,10 +16,22 @@ REQUIRED = {
     "det_2.5g.onnx": "041f73f47371333d1d17a6fee6c8ab4e6aecabefe398ff32cca4e2d5eaee0af9",
     "w600k_r50.onnx": "4c06341c33c2ca1f86781dab0e829f88ad5b64be9fba56e56bc9ebdefc619e43",
 }
+OFFICIAL_PACKAGE_SHA256 = "d98264bd8f2dc75cbc2ddce2a14e636e02bb857b3051c234b737bf3b614edca9"
+OFFICIAL_SOURCE = (
+    "https://github.com/deepinsight/insightface/releases/download/model-zoo/buffalo_m.zip"
+)
 
 
 def sha256(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
+
+
+def sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
 
 
 def main() -> int:
@@ -38,6 +50,12 @@ def main() -> int:
         )
     if not args.pack_zip.is_file():
         parser.error(f"Pack ZIP does not exist: {args.pack_zip}")
+    package_hash = sha256_file(args.pack_zip)
+    if package_hash != OFFICIAL_PACKAGE_SHA256:
+        parser.error(
+            "Official buffalo_m package hash mismatch before extraction: "
+            f"expected {OFFICIAL_PACKAGE_SHA256}, got {package_hash}"
+        )
     with zipfile.ZipFile(args.pack_zip) as archive:
         if archive.testzip() is not None:
             parser.error("Pack ZIP failed its CRC check")
@@ -75,7 +93,13 @@ def main() -> int:
         os.replace(temporary, target)
     print(
         json.dumps(
-            {"pack": args.pack, "output": str(output), "verified_models": REQUIRED},
+            {
+                "pack": args.pack,
+                "official_source": OFFICIAL_SOURCE,
+                "package_sha256": package_hash,
+                "output": str(output),
+                "verified_models": REQUIRED,
+            },
             indent=2,
             sort_keys=True,
         )

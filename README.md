@@ -4,11 +4,13 @@ FaceGuard AI v2 is a consent-based face recognition and RGB presentation-attack 
 
 ## Current state
 
-The hash-verified PAD candidate, audited ArcFace embeddings, protected gallery
-implementation, PAD-before-recognition state machine, bounded live queue and strict
-runtime configuration are present. The recognition gallery/threshold and local
-InsightFace model files are still required, so the runtime deliberately refuses to
-start instead of guessing. The v2 system is **not yet validated or released**.
+The hash-verified PAD candidate, audited ArcFace embeddings, frozen exploratory
+recognition splits, protected 187-identity gallery, validation-calibrated recognition
+threshold, PAD-before-recognition state machine, bounded live queue and strict runtime
+configuration are present. The official `buffalo_m` package and its extracted SCRFD
+and ArcFace files passed their frozen hashes, and the complete CPU runtime load plus
+one private live-query compatibility check passed. Sequential-video and target-camera
+validation remain required. The v2 system is **not yet validated or released**.
 
 See `docs/RUNTIME_PIPELINE.md` for the ordered completion and verification runbook.
 

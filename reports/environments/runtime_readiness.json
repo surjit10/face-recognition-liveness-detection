@@ -1,0 +1,26 @@
+{
+  "camera_opened": false,
+  "created_at": "2026-10-25T13:37:01.939589+00:00",
+  "event": "runtime_ready",
+  "face_pack": "buffalo_m",
+  "face_runtime_providers": {
+    "detection": [
+      "CPUExecutionProvider"
+    ],
+    "recognition": [
+      "CPUExecutionProvider"
+    ]
+  },
+  "gallery_identities": 187,
+  "gallery_vectors": 1430,
+  "pad_model_sha256": "bd8bcc251df7b09285893f51dc35a3f7bd3d6e78c4be5641f49a4130f30e1359",
+  "providers": [
+    "CPUExecutionProvider"
+  ],
+  "release_id": "faceguard-v2-development",
+  "schema_version": 1,
+  "verified_face_model_hashes": {
+    "det_2.5g.onnx": "041f73f47371333d1d17a6fee6c8ab4e6aecabefe398ff32cca4e2d5eaee0af9",
+    "w600k_r50.onnx": "4c06341c33c2ca1f86781dab0e829f88ad5b64be9fba56e56bc9ebdefc619e43"
+  }
+}

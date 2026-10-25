@@ -1,7 +1,7 @@
 schema_version: 1
 project_id: faceguard-ai-v2
 blueprint_version: "1.1"
-last_updated: "2026-10-25T18:45:00+05:30"
+last_updated: "2026-10-25T19:08:00+05:30"
 source_of_truth: reference/FaceGuard_AI_Implementation_Blueprint.md
 status_values:
   - NOT_STARTED
@@ -13,20 +13,20 @@ summary:
   active_phase: P0
   overall_status: IN_PROGRESS
   total_tasks: 59
-  complete_tasks: 8
-  remaining_tasks: 51
-  blocked_tasks: 1
-  completion_percent: 13.6
-  next_gate: "Freeze the unknown-session limitation and recognition splits, then supply the official local buffalo_m pack."
+  complete_tasks: 20
+  remaining_tasks: 39
+  blocked_tasks: 0
+  completion_percent: 33.9
+  next_gate: "Run sequential spoof, unknown, enrolled, no-face, multi-face, and interruption video regressions before camera benchmarking."
 
 phases:
   - id: P0
     name: Repository, data, permission, and environment audit
     status: IN_PROGRESS
     total_tasks: 12
-    complete_tasks: 8
-    remaining_tasks: 4
-    completion_percent: 66.7
+    complete_tasks: 10
+    remaining_tasks: 2
+    completion_percent: 83.3
     exit_gate: "Cohort, permission, label meaning, evaluation limitation, manifests, decisions, and required environment evidence are VERIFIED."
     tasks:
       - id: P0-01
@@ -80,19 +80,20 @@ phases:
         blocked_by: []
       - id: P0-08
         title: Generate FRAD inventory and subject manifests with checksums
-        status: IN_PROGRESS
+        status: COMPLETE
         evidence:
           - data/manifests/frad_inventory.csv
-        notes: "Draft inventory exists; verified subject/cohort manifest remains blocked by P0-06 and model audit."
-        blocked_by:
-          - P0-06
-          - P0-07
+          - data/manifests/recognition_split_summary.json
+          - reports/audits/recognition_split_validation.json
+        notes: "Audited embeddings were frozen into five explicit, hash-disjoint exploratory recognition manifests."
+        blocked_by: []
       - id: P0-09
         title: Verify session/device metadata or freeze the exploratory unknown-session limitation
-        status: BLOCKED
-        evidence: []
-        blocked_by:
-          - FRAD_SESSION_POLICY
+        status: COMPLETE
+        evidence:
+          - configs/decisions.yaml#FRAD_SESSION_POLICY
+          - data/manifests/recognition_split_summary.json
+        blocked_by: []
       - id: P0-10
         title: Capture local, Kaggle, and CI environment preflight reports as available
         status: IN_PROGRESS
@@ -118,41 +119,41 @@ phases:
 
   - id: P1
     name: Face recognition and protected gallery
-    status: IN_PROGRESS
+    status: COMPLETE
     total_tasks: 10
-    complete_tasks: 0
-    remaining_tasks: 10
-    completion_percent: 0.0
+    complete_tasks: 10
+    remaining_tasks: 0
+    completion_percent: 100.0
     exit_gate: "Frozen model/environment/splits, private gallery, calibrated open-set evaluation, and P1 tests pass."
     tasks:
       - id: P1-01
         title: Verify official InsightFace buffalo_m terms, source, files, and SHA-256 hashes
-        status: NOT_STARTED
-        evidence: []
-        blocked_by:
-          - INSIGHTFACE_PACK
-          - P0
+        status: COMPLETE
+        evidence:
+          - configs/decisions.yaml#INSIGHTFACE_PACK
+          - reports/environments/runtime_readiness.json
+        blocked_by: []
       - id: P1-02
         title: Freeze the tested local recognition environment lock
-        status: IN_PROGRESS
+        status: COMPLETE
         evidence:
           - requirements-runtime.lock
           - reports/environments/environment_local_runtime.json
-        blocked_by:
-          - P0-10
+          - reports/environments/runtime_readiness.json
+        blocked_by: []
       - id: P1-03
         title: Implement and test SCRFD/ArcFace wrapper with explicit providers
-        status: IN_PROGRESS
+        status: COMPLETE
         evidence:
           - src/faceguard/models.py
           - scripts/install_insightface_pack.py
           - tests/contract/test_model_pack.py
-        blocked_by:
-          - P1-01
-          - P1-02
+          - reports/environments/runtime_readiness.json
+          - reports/environments/live_query_compatibility.json
+        blocked_by: []
       - id: P1-04
         title: Freeze enrollment, validation, and untouched test manifests
-        status: IN_PROGRESS
+        status: COMPLETE
         evidence:
           - data/manifests/templates
           - src/faceguard/recognition_manifest.py
@@ -163,7 +164,7 @@ phases:
           - P0-09
       - id: P1-05
         title: Implement embedding validation, normalization, and private gallery persistence
-        status: IN_PROGRESS
+        status: COMPLETE
         evidence:
           - src/faceguard/gallery.py
           - scripts/build_gallery.py
@@ -173,7 +174,7 @@ phases:
           - P1-04
       - id: P1-06
         title: Implement enroll, search, delete, model-hash, tie, and ambiguity policies
-        status: IN_PROGRESS
+        status: COMPLETE
         evidence:
           - src/faceguard/gallery.py
           - src/faceguard/recognition_metrics.py
@@ -182,14 +183,14 @@ phases:
           - P1-05
       - id: P1-07
         title: Generate private enrollment gallery and artifact checksum
-        status: NOT_STARTED
-        evidence: []
-        blocked_by:
-          - P1-05
-          - FRAD_PERMISSION
+        status: COMPLETE
+        evidence:
+          - models/private/gallery/gallery.json
+          - data/manifests/recognition_enrollment.csv
+        blocked_by: []
       - id: P1-08
         title: Calibrate the recognition threshold and margin on validation only
-        status: IN_PROGRESS
+        status: COMPLETE
         evidence:
           - scripts/evaluate_recognition.py
           - scripts/calibrate_recognition.py
@@ -201,19 +202,22 @@ phases:
           - RECOGNITION_THRESHOLD_POLICY
       - id: P1-09
         title: Run untouched open-set recognition evaluation with confidence intervals
-        status: IN_PROGRESS
+        status: COMPLETE
         evidence:
           - scripts/evaluate_recognition.py
+          - reports/evaluation/recognition_validation.json
+          - reports/evaluation/recognition_test.json
         blocked_by:
           - P1-08
       - id: P1-10
         title: Pass P1 unit, contract, privacy, deletion, and regression tests
-        status: NOT_STARTED
-        evidence: []
-        blocked_by:
-          - P1-03
-          - P1-06
-          - P1-09
+        status: COMPLETE
+        evidence:
+          - tests/unit
+          - tests/contract
+          - reports/environments/runtime_readiness.json
+        blocked_by: []
+        notes: "Full local suite passed 50 tests after runtime readiness, live-query, and state-change-only reporting checks."
 
   - id: P2
     name: Presentation attack detection training and ONNX export
@@ -239,8 +243,11 @@ phases:
           - PAD_LABEL_MAPPING
       - id: P2-03
         title: Freeze subject-disjoint PAD train, validation, and test manifests
-        status: NOT_STARTED
-        evidence: []
+        status: IN_PROGRESS
+        evidence:
+          - src/faceguard/pad_manifest.py
+          - tests/unit/test_pad.py
+          - tests/unit/test_pad_manifest_optimized.py
         blocked_by:
           - P2-02
       - id: P2-04
@@ -252,8 +259,11 @@ phases:
           - PAD_TRAINING_CONFIG
       - id: P2-05
         title: Implement deterministic PAD dataset and preprocessing pipeline
-        status: NOT_STARTED
-        evidence: []
+        status: IN_PROGRESS
+        evidence:
+          - src/faceguard/pad_manifest.py
+          - scripts/train_pad.py
+          - tests/unit/test_pad.py
         blocked_by:
           - P2-03
           - P2-04
@@ -517,6 +527,32 @@ phases:
           - P5-09
 
 change_log:
+  - timestamp: "2026-10-25T19:08:00+05:30"
+    actor: codex
+    change: "Downloaded the official buffalo_m release ZIP, verified the package and extracted model hashes, recorded the user's model-terms acknowledgment, loaded SCRFD/ArcFace/PAD/gallery on the pinned CPU provider, passed a privacy-safe fresh-image gallery query, added camera-free readiness reporting, and passed 50 tests including state-change-only runtime reporting. P1 is complete; sequential-video and broader camera validation are still pending."
+    affected_tasks:
+      - P1-01
+      - P1-02
+      - P1-03
+      - P1-10
+  - timestamp: "2026-10-25T18:49:00+05:30"
+    actor: codex
+    change: "Added mandatory PAD subject/path/hash leakage validation at training startup so edited CSVs cannot bypass the generator checks. The full suite now passes 46 tests. Actual PAD split CSVs are still required from the training run to independently audit its recorded hashes."
+    affected_tasks:
+      - P2-03
+      - P2-05
+  - timestamp: "2026-10-25T18:47:00+05:30"
+    actor: codex
+    change: "Froze the explicitly exploratory unknown-session recognition protocol over all 234 preserved IDs, validated all 2,709 usable samples with no hash leakage, built a 187-identity private gallery, calibrated only on validation, and evaluated the held-out test identity cohorts with person-cluster confidence intervals."
+    affected_tasks:
+      - P0-08
+      - P0-09
+      - P1-04
+      - P1-05
+      - P1-06
+      - P1-07
+      - P1-08
+      - P1-09
   - timestamp: "2026-10-25T18:45:00+05:30"
     actor: codex
     change: "Recorded the user's confirmation that every numeric folder represents one person and contains genuine bona-fide images. Closed the identity-semantics and canonical-cohort gates; session/device semantics and recognition splits remain unresolved."

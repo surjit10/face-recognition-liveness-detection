@@ -22,6 +22,7 @@ from faceguard.gallery import Gallery, GalleryError  # noqa: E402
 OUTPUT_FIELDS = (
     "probe_id",
     "probe_kind",
+    "probe_person_id",
     "top1_person_id",
     "top1_score",
     "top1_top2_margin",
@@ -86,6 +87,7 @@ def main() -> int:
                     {
                         "probe_id": probe["sample_id"],
                         "probe_kind": probe["probe_kind"],
+                        "probe_person_id": probe["verified_person_id"],
                         "top1_person_id": ranking.top1_person_id,
                         "top1_score": ranking.top1_score,
                         "top1_top2_margin": ranking.margin,

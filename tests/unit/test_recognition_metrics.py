@@ -3,6 +3,7 @@ import pytest
 
 from faceguard.recognition_metrics import (
     RecognitionMetricError,
+    evaluate_recognition_operating_point,
     select_recognition_threshold,
 )
 
@@ -46,3 +47,19 @@ def test_wrong_identity_and_ambiguous_margin_count_as_non_matches() -> None:
     )
     assert report["selected"]["false_non_matches"] == 1
     assert report["selected"]["false_matches"] == 0
+
+
+def test_frozen_operating_point_separates_rejection_and_misidentification() -> None:
+    report = evaluate_recognition_operating_point(
+        np.asarray([0.9, 0.8, 0.3]),
+        np.asarray([0.7, 0.2]),
+        threshold=0.6,
+        min_margin=0.1,
+        known_correct=np.asarray([True, False, True]),
+        known_margins=np.asarray([0.2, 0.2, 0.2]),
+        impostor_margins=np.asarray([0.05, 0.2]),
+    )
+    assert report["known_correct_accepts"] == 1
+    assert report["known_misidentification_accepts"] == 1
+    assert report["known_rejections"] == 1
+    assert report["impostor_false_accepts"] == 0

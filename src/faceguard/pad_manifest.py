@@ -69,6 +69,63 @@ MANIFEST_COLUMNS = (
 )
 
 
+def validate_pad_split_rows(
+    split_rows: dict[str, list[dict[str, str]]],
+) -> dict[str, dict[str, int]]:
+    """Fail if train/validation/test reuse a subject, file hash, or path."""
+    if set(split_rows) != {"train", "val", "test"}:
+        raise PadManifestError("PAD validation requires train, val, and test splits")
+    summary: dict[str, dict[str, int]] = {}
+    subject_sets: dict[str, set[str]] = {}
+    hash_sets: dict[str, set[str]] = {}
+    path_sets: dict[str, set[str]] = {}
+    for name, rows in split_rows.items():
+        if not rows:
+            raise PadManifestError(f"PAD split {name} is empty")
+        required = {"subject_id", "relative_path", "sha256", "target_live"}
+        if required.difference(rows[0]):
+            raise PadManifestError(f"PAD split {name} is missing leakage-check fields")
+        subjects = {row["subject_id"].strip() for row in rows}
+        paths = {row["relative_path"].strip() for row in rows}
+        hashes = {row["sha256"].strip().lower() for row in rows}
+        if "" in subjects or "" in paths or "" in hashes:
+            raise PadManifestError(f"PAD split {name} contains an empty identity/path/hash")
+        if len(paths) != len(rows) or len(hashes) != len(rows):
+            raise PadManifestError(f"PAD split {name} contains duplicate paths or hashes")
+        if any(len(value) != 64 for value in hashes):
+            raise PadManifestError(f"PAD split {name} contains an invalid SHA-256")
+        try:
+            labels = {int(row["target_live"]) for row in rows}
+        except ValueError as exc:
+            raise PadManifestError(f"PAD split {name} has a non-integer label") from exc
+        if labels != {0, 1}:
+            raise PadManifestError(f"PAD split {name} must contain both PAD classes")
+        subject_sets[name], path_sets[name], hash_sets[name] = subjects, paths, hashes
+        summary[name] = {
+            "rows": len(rows),
+            "subjects": len(subjects),
+            "bona_fide": sum(int(row["target_live"]) == 1 for row in rows),
+            "attack": sum(int(row["target_live"]) == 0 for row in rows),
+        }
+    for left, right in (("train", "val"), ("train", "test"), ("val", "test")):
+        subjects = subject_sets[left].intersection(subject_sets[right])
+        if subjects:
+            raise PadManifestError(
+                f"PAD subject leakage between {left} and {right}: {sorted(subjects)[:10]}"
+            )
+        hashes = hash_sets[left].intersection(hash_sets[right])
+        if hashes:
+            raise PadManifestError(
+                f"PAD file-hash leakage between {left} and {right}: {sorted(hashes)[:3]}"
+            )
+        paths = path_sets[left].intersection(path_sets[right])
+        if paths:
+            raise PadManifestError(
+                f"PAD path leakage between {left} and {right}: {sorted(paths)[:3]}"
+            )
+    return summary
+
+
 def _atomic_csv(path: Path, rows: list[dict[str, Any]]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.NamedTemporaryFile(

@@ -12,6 +12,51 @@ class RecognitionMetricError(RuntimeError):
     """Recognition calibration inputs or policy are invalid."""
 
 
+def evaluate_recognition_operating_point(
+    known_scores: np.ndarray,
+    impostor_scores: np.ndarray,
+    *,
+    threshold: float,
+    min_margin: float,
+    known_correct: np.ndarray,
+    known_margins: np.ndarray,
+    impostor_margins: np.ndarray,
+) -> dict[str, Any]:
+    """Evaluate a frozen open-set threshold/margin without selecting either value."""
+    known = _scores(known_scores, "Known-person")
+    impostor = _scores(impostor_scores, "Impostor")
+    correct = np.asarray(known_correct, dtype=bool)
+    known_margin_values = np.asarray(known_margins, dtype=np.float64)
+    impostor_margin_values = np.asarray(impostor_margins, dtype=np.float64)
+    if correct.shape != known.shape:
+        raise RecognitionMetricError("Known correctness flags must align with scores")
+    if known_margin_values.shape != known.shape or impostor_margin_values.shape != impostor.shape:
+        raise RecognitionMetricError("Margins must align with recognition scores")
+    if not np.isfinite(np.concatenate((known_margin_values, impostor_margin_values))).all():
+        raise RecognitionMetricError("Recognition margins must be finite")
+    if not np.isfinite(threshold) or not -1.0 <= threshold <= 1.0:
+        raise RecognitionMetricError("Recognition threshold must be within [-1, 1]")
+    if not np.isfinite(min_margin) or not 0.0 <= min_margin <= 2.0:
+        raise RecognitionMetricError("Recognition margin must be within [0, 2]")
+    known_accept = (known >= threshold) & (known_margin_values >= min_margin)
+    impostor_accept = (impostor >= threshold) & (impostor_margin_values >= min_margin)
+    correct_accept = known_accept & correct
+    misidentified_accept = known_accept & ~correct
+    return {
+        "threshold": threshold,
+        "min_top1_top2_margin": min_margin,
+        "known_searches": len(known),
+        "known_correct_accepts": int(np.sum(correct_accept)),
+        "known_misidentification_accepts": int(np.sum(misidentified_accept)),
+        "known_rejections": int(np.sum(~known_accept)),
+        "known_identification_failure_rate": float(1.0 - np.mean(correct_accept)),
+        "known_misidentification_accept_rate": float(np.mean(misidentified_accept)),
+        "impostor_searches": len(impostor),
+        "impostor_false_accepts": int(np.sum(impostor_accept)),
+        "impostor_false_positive_identification_rate": float(np.mean(impostor_accept)),
+    }
+
+
 def _scores(values: np.ndarray, name: str) -> np.ndarray:
     result = np.asarray(values, dtype=np.float64)
     if result.ndim != 1 or len(result) == 0 or not np.isfinite(result).all():

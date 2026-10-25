@@ -12,6 +12,8 @@ Scripts provide small CLI wrappers around importable `src/faceguard/` functions.
 - `install_insightface_pack.py`: offline, terms-acknowledged, hash-verified model-pack installation.
 - `build_gallery.py`: build a protected gallery from an explicit frozen enrollment manifest.
 - `validate_recognition_manifests.py`: prove split disjointness, hashes, decodeability and identity rules.
+- `create_recognition_split.py`: deterministic exploratory open-set splitting without invented session/device data.
 - `evaluate_recognition.py`: create private open-set search scores from frozen probe manifests.
 - `calibrate_recognition.py`: validation-only open-set threshold selection from saved search scores.
-- `run_demo.py`: fail-closed sequential-video or bounded-queue webcam runtime.
+- `report_recognition.py`: frozen operating-point metrics with person-cluster confidence intervals.
+- `run_demo.py`: fail-closed readiness check, sequential-video or bounded-queue webcam runtime.

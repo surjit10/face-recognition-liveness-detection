@@ -33,6 +33,8 @@ from faceguard.config import sha256_file  # noqa: E402
 from faceguard.pad_manifest import (  # noqa: E402
     DEFAULT_CROP_SCALE,
     DEFAULT_MAX_CLIPPED_FRACTION,
+    PadManifestError,
+    validate_pad_split_rows,
 )
 from faceguard.pad_metrics import confusion, rates, roc_auc, select_eer_threshold  # noqa: E402
 
@@ -395,6 +397,16 @@ def main() -> int:
         name: args.manifest_dir / f"pad_{name}.csv" for name in ("train", "val", "test")
     }
     rows = {name: read_manifest(path) for name, path in manifest_paths.items()}
+    try:
+        leakage_summary = validate_pad_split_rows(rows)
+    except PadManifestError as exc:
+        raise RuntimeError(f"PAD manifest leakage validation failed: {exc}") from exc
+    if rank == 0:
+        print(
+            "[PAD][MANIFEST] Subject/path/hash disjointness passed: "
+            + json.dumps(leakage_summary, sort_keys=True),
+            flush=True,
+        )
     manifest_hashes = {name: sha256_file(path) for name, path in manifest_paths.items()}
     dataset_root = args.dataset_root.resolve(strict=True)
 

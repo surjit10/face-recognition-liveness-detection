@@ -1,0 +1,13 @@
+{
+  "counts": {
+    "enrollment": 1430,
+    "test_impostor": 280,
+    "test_known": 367,
+    "val_impostor": 265,
+    "val_known": 367
+  },
+  "enrollment_identities": 187,
+  "schema_version": 1,
+  "total_samples": 2709,
+  "unknown_session_metadata_allowed": true
+}

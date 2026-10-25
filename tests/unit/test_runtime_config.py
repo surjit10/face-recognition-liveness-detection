@@ -10,11 +10,24 @@ from faceguard.runtime_config import load_runtime_config
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 
-def test_candidate_runtime_config_blocks_unresolved_recognition_values() -> None:
+def test_frozen_exploratory_runtime_config_parses() -> None:
+    config = load_runtime_config(
+        PROJECT_ROOT / "configs/runtime.yaml", project_root=PROJECT_ROOT
+    )
+    assert config.pipeline_policy.recognition_threshold == pytest.approx(
+        0.6713641881942749
+    )
+
+
+def test_runtime_config_blocks_unresolved_recognition_values(tmp_path: Path) -> None:
+    document = yaml.safe_load(
+        (PROJECT_ROOT / "configs/runtime.yaml").read_text(encoding="utf-8")
+    )
+    document["face"]["threshold"] = None
+    path = tmp_path / "runtime.yaml"
+    path.write_text(yaml.safe_dump(document), encoding="utf-8")
     with pytest.raises(ConfigurationError, match="face.threshold"):
-        load_runtime_config(
-            PROJECT_ROOT / "configs/runtime.yaml", project_root=PROJECT_ROOT
-        )
+        load_runtime_config(path, project_root=PROJECT_ROOT)
 
 
 def test_complete_runtime_config_parses_without_silent_defaults(tmp_path: Path) -> None:
