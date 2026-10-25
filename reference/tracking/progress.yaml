@@ -1,7 +1,7 @@
 schema_version: 1
 project_id: faceguard-ai-v2
 blueprint_version: "1.1"
-last_updated: "2026-10-24T17:52:16+05:30"
+last_updated: "2026-10-25T18:45:00+05:30"
 source_of_truth: reference/FaceGuard_AI_Implementation_Blueprint.md
 status_values:
   - NOT_STARTED
@@ -13,20 +13,20 @@ summary:
   active_phase: P0
   overall_status: IN_PROGRESS
   total_tasks: 59
-  complete_tasks: 4
-  remaining_tasks: 55
-  blocked_tasks: 4
-  completion_percent: 6.8
-  next_gate: "Resolve FRAD permission, identity semantics, and cohort; then generate and freeze P0 manifests."
+  complete_tasks: 8
+  remaining_tasks: 51
+  blocked_tasks: 1
+  completion_percent: 13.6
+  next_gate: "Freeze the unknown-session limitation and recognition splits, then supply the official local buffalo_m pack."
 
 phases:
   - id: P0
     name: Repository, data, permission, and environment audit
     status: IN_PROGRESS
     total_tasks: 12
-    complete_tasks: 4
-    remaining_tasks: 8
-    completion_percent: 33.3
+    complete_tasks: 8
+    remaining_tasks: 4
+    completion_percent: 66.7
     exit_gate: "Cohort, permission, label meaning, evaluation limitation, manifests, decisions, and required environment evidence are VERIFIED."
     tasks:
       - id: P0-01
@@ -50,30 +50,33 @@ phases:
         blocked_by: []
       - id: P0-04
         title: Verify FRAD consent, local processing, cloud transfer, and publication permissions
-        status: BLOCKED
-        evidence: []
-        blocked_by:
-          - FRAD_PERMISSION
+        status: COMPLETE
+        evidence:
+          - configs/decisions.yaml#FRAD_PERMISSION
+          - data/README.md
+        blocked_by: []
       - id: P0-05
         title: Verify folder-to-person identity semantics and bona-fide meaning
-        status: BLOCKED
-        evidence: []
-        blocked_by:
-          - FRAD_LABEL_MEANING
+        status: COMPLETE
+        evidence:
+          - configs/decisions.yaml#FRAD_LABEL_MEANING
+          - reports/audits/frad_identity_confirmation.json
+        blocked_by: []
       - id: P0-06
         title: Resolve the canonical cohort including 0183, 0234, and duplicate policy
-        status: BLOCKED
-        evidence: []
-        blocked_by:
-          - P0-04
-          - P0-05
-          - FRAD_COHORT
+        status: COMPLETE
+        evidence:
+          - configs/decisions.yaml#FRAD_COHORT
+          - reports/audits/frad_audit.json
+          - reports/audits/frad_identity_confirmation.json
+        blocked_by: []
       - id: P0-07
         title: Run full decode, dimensions, corruption, duplicate, and face-count audit
-        status: IN_PROGRESS
+        status: COMPLETE
         evidence:
           - reports/audits/frad_audit.json
-        notes: "Decode/dimensions/exact-duplicate audit passed for 2,802 files; SCRFD face counts remain pending on the verified model pack."
+          - models/private/frad_candidate_embeddings/embedding_extraction.json
+        notes: "Decode/dimensions/duplicate audit passed; SCRFD audit embedded 2,709 samples and explicitly quarantined 56 no-face and 38 multiple-face samples."
         blocked_by: []
       - id: P0-08
         title: Generate FRAD inventory and subject manifests with checksums
@@ -95,7 +98,7 @@ phases:
         status: IN_PROGRESS
         evidence:
           - reports/environments/environment_local_before.json
-        notes: "System preflight captured and clean project .venv created; local dependency smoke/lock, Kaggle preflight, and CI environment remain pending."
+        notes: "Local CPU preflight, dependency check, PAD ONNX load and inference passed. Local full-pipeline lock, Kaggle preflight, and CI environment remain pending."
         blocked_by: []
       - id: P0-11
         title: Create and validate configs/decisions.yaml
@@ -115,7 +118,7 @@ phases:
 
   - id: P1
     name: Face recognition and protected gallery
-    status: NOT_STARTED
+    status: IN_PROGRESS
     total_tasks: 10
     complete_tasks: 0
     remaining_tasks: 10
@@ -131,35 +134,50 @@ phases:
           - P0
       - id: P1-02
         title: Freeze the tested local recognition environment lock
-        status: NOT_STARTED
-        evidence: []
+        status: IN_PROGRESS
+        evidence:
+          - requirements-runtime.lock
+          - reports/environments/environment_local_runtime.json
         blocked_by:
           - P0-10
       - id: P1-03
         title: Implement and test SCRFD/ArcFace wrapper with explicit providers
-        status: NOT_STARTED
-        evidence: []
+        status: IN_PROGRESS
+        evidence:
+          - src/faceguard/models.py
+          - scripts/install_insightface_pack.py
+          - tests/contract/test_model_pack.py
         blocked_by:
           - P1-01
           - P1-02
       - id: P1-04
         title: Freeze enrollment, validation, and untouched test manifests
-        status: NOT_STARTED
-        evidence: []
+        status: IN_PROGRESS
+        evidence:
+          - data/manifests/templates
+          - src/faceguard/recognition_manifest.py
+          - scripts/validate_recognition_manifests.py
+          - tests/unit/test_recognition_manifest.py
         blocked_by:
           - P0-08
           - P0-09
       - id: P1-05
         title: Implement embedding validation, normalization, and private gallery persistence
-        status: NOT_STARTED
-        evidence: []
+        status: IN_PROGRESS
+        evidence:
+          - src/faceguard/gallery.py
+          - scripts/build_gallery.py
+          - tests/unit/test_gallery.py
         blocked_by:
           - P1-03
           - P1-04
       - id: P1-06
         title: Implement enroll, search, delete, model-hash, tie, and ambiguity policies
-        status: NOT_STARTED
-        evidence: []
+        status: IN_PROGRESS
+        evidence:
+          - src/faceguard/gallery.py
+          - src/faceguard/recognition_metrics.py
+          - tests/unit/test_gallery.py
         blocked_by:
           - P1-05
       - id: P1-07
@@ -171,16 +189,21 @@ phases:
           - FRAD_PERMISSION
       - id: P1-08
         title: Calibrate the recognition threshold and margin on validation only
-        status: NOT_STARTED
-        evidence: []
+        status: IN_PROGRESS
+        evidence:
+          - scripts/evaluate_recognition.py
+          - scripts/calibrate_recognition.py
+          - src/faceguard/recognition_metrics.py
+          - tests/unit/test_recognition_metrics.py
         blocked_by:
           - P1-04
           - P1-07
           - RECOGNITION_THRESHOLD_POLICY
       - id: P1-09
         title: Run untouched open-set recognition evaluation with confidence intervals
-        status: NOT_STARTED
-        evidence: []
+        status: IN_PROGRESS
+        evidence:
+          - scripts/evaluate_recognition.py
         blocked_by:
           - P1-08
       - id: P1-10
@@ -194,7 +217,7 @@ phases:
 
   - id: P2
     name: Presentation attack detection training and ONNX export
-    status: NOT_STARTED
+    status: IN_PROGRESS
     total_tasks: 11
     complete_tasks: 0
     remaining_tasks: 11
@@ -261,20 +284,25 @@ phases:
           - PAD_THRESHOLD_POLICY
       - id: P2-10
         title: Export ONNX and pass representative-input numerical and decision parity
-        status: NOT_STARTED
-        evidence: []
+        status: IN_PROGRESS
+        evidence:
+          - data/processed/pad_model_bundle.zip
+          - src/faceguard/pad.py
+          - tests/unit/test_pad_runtime.py
         blocked_by:
           - P2-09
       - id: P2-11
         title: Publish private artifacts, checksums, reports, and PAD model card
-        status: NOT_STARTED
-        evidence: []
+        status: IN_PROGRESS
+        evidence:
+          - data/processed/pad_model_bundle.zip
+          - scripts/prepare_runtime_artifacts.py
         blocked_by:
           - P2-10
 
   - id: P3
     name: Integrated sequential-video verification pipeline
-    status: NOT_STARTED
+    status: IN_PROGRESS
     total_tasks: 8
     complete_tasks: 0
     remaining_tasks: 8
@@ -283,39 +311,49 @@ phases:
     tasks:
       - id: P3-01
         title: Implement exact single-face and quality gates
-        status: NOT_STARTED
-        evidence: []
+        status: IN_PROGRESS
+        evidence:
+          - src/faceguard/pipeline.py
+          - tests/unit/test_pipeline.py
         blocked_by:
           - P1
           - P2
       - id: P3-02
         title: Implement short-lived IoU track and continuity resets
-        status: NOT_STARTED
-        evidence: []
+        status: IN_PROGRESS
+        evidence:
+          - src/faceguard/pipeline.py
+          - tests/unit/test_pipeline.py
         blocked_by:
           - P3-01
       - id: P3-03
         title: Implement temporal PAD evidence aggregation
-        status: NOT_STARTED
-        evidence: []
+        status: IN_PROGRESS
+        evidence:
+          - src/faceguard/pipeline.py
+          - tests/unit/test_pipeline.py
         blocked_by:
           - P3-02
       - id: P3-04
         title: Implement PAD-before-recognition state machine
-        status: NOT_STARTED
-        evidence: []
+        status: IN_PROGRESS
+        evidence:
+          - src/faceguard/pipeline.py
+          - tests/unit/test_pipeline.py
         blocked_by:
           - P3-03
       - id: P3-05
         title: Implement MP4 sequential source and structured non-biometric events
-        status: NOT_STARTED
-        evidence: []
+        status: IN_PROGRESS
+        evidence:
+          - scripts/run_demo.py
         blocked_by:
           - P3-04
       - id: P3-06
         title: Pass every state transition and reset test
-        status: NOT_STARTED
-        evidence: []
+        status: IN_PROGRESS
+        evidence:
+          - tests/unit/test_pipeline.py
         blocked_by:
           - P3-04
       - id: P3-07
@@ -327,14 +365,16 @@ phases:
           - P3-06
       - id: P3-08
         title: Verify that logs and events contain no frames, crops, or embeddings
-        status: NOT_STARTED
-        evidence: []
+        status: IN_PROGRESS
+        evidence:
+          - src/faceguard/pipeline.py
+          - tests/unit/test_pipeline.py
         blocked_by:
           - P3-05
 
   - id: P4
     name: Live runtime, queueing, and target-hardware performance
-    status: NOT_STARTED
+    status: IN_PROGRESS
     total_tasks: 8
     complete_tasks: 0
     remaining_tasks: 8
@@ -349,14 +389,17 @@ phases:
           - TARGET_HARDWARE
       - id: P4-02
         title: Implement bounded latest-frame producer/consumer queue
-        status: NOT_STARTED
-        evidence: []
+        status: IN_PROGRESS
+        evidence:
+          - src/faceguard/runtime.py
+          - tests/unit/test_runtime.py
         blocked_by:
           - P3
       - id: P4-03
         title: Implement webcam source, timestamps, frame-age checks, and session IDs
-        status: NOT_STARTED
-        evidence: []
+        status: IN_PROGRESS
+        evidence:
+          - scripts/run_demo.py
         blocked_by:
           - P4-02
       - id: P4-04
@@ -367,8 +410,10 @@ phases:
           - P4-03
       - id: P4-05
         title: Validate ONNX CPU providers and thread configuration
-        status: NOT_STARTED
-        evidence: []
+        status: IN_PROGRESS
+        evidence:
+          - reports/environments/environment_local_runtime.json
+          - src/faceguard/pad.py
         blocked_by:
           - P1-02
           - P2-10
@@ -472,6 +517,38 @@ phases:
           - P5-09
 
 change_log:
+  - timestamp: "2026-10-25T18:45:00+05:30"
+    actor: codex
+    change: "Recorded the user's confirmation that every numeric folder represents one person and contains genuine bona-fide images. Closed the identity-semantics and canonical-cohort gates; session/device semantics and recognition splits remain unresolved."
+    affected_tasks:
+      - P0-05
+      - P0-06
+  - timestamp: "2026-10-25T18:31:18+05:30"
+    actor: codex
+    change: "Verified and privately promoted the PAD bundle; implemented strict recognition-manifest validation, gallery, calibration, PAD inference, temporal PAD-before-recognition, bounded live queue, configuration and CLI scaffolding; passed 40 tests and local PAD CPU smoke. Completion credit added only for permission and the completed recognition face-count audit; downstream gates remain incomplete."
+    affected_tasks:
+      - P0-04
+      - P0-07
+      - P0-10
+      - P1-03
+      - P1-02
+      - P1-04
+      - P1-05
+      - P1-06
+      - P1-08
+      - P1-09
+      - P2-10
+      - P2-11
+      - P3-01
+      - P3-02
+      - P3-03
+      - P3-04
+      - P3-05
+      - P3-06
+      - P3-08
+      - P4-02
+      - P4-03
+      - P4-05
   - timestamp: "2026-10-24T17:52:16+05:30"
     actor: codex
     change: "Created local/Kaggle embedding scaffolding, generated the 2,802-row draft inventory and structural audit, and began isolated local environment validation. No completion credit added because model/permission/Kaggle gates remain open."

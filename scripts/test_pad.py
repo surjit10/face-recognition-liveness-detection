@@ -71,18 +71,24 @@ class PADPredictor:
         self.session = ort.InferenceSession(str(model_path), providers=["CPUExecutionProvider"])
         self.input_name = self.session.get_inputs()[0].name
 
-        # Load calibrated threshold if available
-        self.threshold = 0.5
-        if metrics_path and metrics_path.exists():
-            try:
-                with open(metrics_path) as f:
-                    data = json.load(f)
-                    self.threshold = float(data.get("calibrated_threshold", 0.5))
-                    print(f"[✓] Loaded calibrated threshold from {metrics_path.name}: τ* = {self.threshold:.4f} (EER: {data.get('eer', 0)*100:.2f}%)")
-            except Exception as e:
-                print(f"[!] Warning reading metrics: {e}; defaulting to τ = 0.5")
-        else:
-            print(f"[i] Using default threshold τ = {self.threshold:.4f}")
+        if metrics_path is None or not metrics_path.exists():
+            raise RuntimeError("A metrics file with a validation-calibrated threshold is required")
+        try:
+            with open(metrics_path) as f:
+                data = json.load(f)
+            if "validation_threshold" in data:
+                value = data["validation_threshold"]["threshold"]
+            else:
+                value = data["calibrated_threshold"]
+            self.threshold = float(value)
+            if not np.isfinite(self.threshold) or not 0.0 <= self.threshold <= 1.0:
+                raise ValueError("threshold is outside [0, 1]")
+            print(
+                f"[✓] Loaded validation-calibrated threshold from "
+                f"{metrics_path.name}: τ* = {self.threshold:.6f}"
+            )
+        except (OSError, KeyError, TypeError, ValueError, json.JSONDecodeError) as exc:
+            raise RuntimeError(f"Invalid PAD threshold metadata: {exc}") from exc
 
     def predict(self, image_input) -> tuple[str, float, float]:
         """Predicts whether an image is REAL (Bona-fide) or SPOOF (Attack).
@@ -166,7 +172,10 @@ def run_webcam(predictor: PADPredictor, camera_id: int = 0):
         detector = cv2.FaceDetectorYN.create(str(yunet_model), "", (320, 320), 0.6, 0.3, 5000)
         print(f"[✓] Loaded YuNet face detector from {yunet_model.name}")
     else:
-        print("[!] YuNet not found; using full-frame / center crop.")
+        raise RuntimeError(
+            "Webcam PAD-only mode requires an explicit face detector. "
+            "Use scripts/run_demo.py for the verified SCRFD pipeline."
+        )
 
     cap = cv2.VideoCapture(camera_id)
     if not cap.isOpened():
@@ -194,10 +203,9 @@ def run_webcam(predictor: PADPredictor, camera_id: int = 0):
                     face_boxes.append((x, y, fw, fh))
 
         if not face_boxes:
-            # Fallback to center 50% box
-            cw, ch = int(w * 0.5), int(h * 0.5)
-            cx, cy = (w - cw) // 2, (h - ch) // 2
-            face_boxes.append((cx, cy, cw, ch))
+            cv2.putText(
+                frame, "NO FACE", (15, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2
+            )
 
         for x, y, fw, fh in face_boxes:
             # Expand bbox by 20% margin

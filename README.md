@@ -4,7 +4,13 @@ FaceGuard AI v2 is a consent-based face recognition and RGB presentation-attack 
 
 ## Current state
 
-The repository structure and governance controls are initialized. The v2 models, thresholds, evaluation results and release artifacts are **not yet validated or released**. Historical v1 results are preserved only as reference evidence and must not be presented as v2 performance.
+The hash-verified PAD candidate, audited ArcFace embeddings, protected gallery
+implementation, PAD-before-recognition state machine, bounded live queue and strict
+runtime configuration are present. The recognition gallery/threshold and local
+InsightFace model files are still required, so the runtime deliberately refuses to
+start instead of guessing. The v2 system is **not yet validated or released**.
+
+See `docs/RUNTIME_PIPELINE.md` for the ordered completion and verification runbook.
 
 Implementation proceeds through these gates:
 

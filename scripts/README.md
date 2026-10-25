@@ -8,3 +8,10 @@ Scripts provide small CLI wrappers around importable `src/faceguard/` functions.
 - `extract_gallery.py`: permission/model-hash/provider-gated private embedding extraction.
 - `prepare_recognition_context.py`: bounded-CPU, non-destructive loose context crops from original recognition photos, with full-frame fallbacks and an auditable manifest.
 - `build_kaggle_bundle.py`: code-only allowlisted ZIP; excludes data, models, reports and reference material.
+- `prepare_runtime_artifacts.py`: CRC/hash-verified private PAD bundle promotion.
+- `install_insightface_pack.py`: offline, terms-acknowledged, hash-verified model-pack installation.
+- `build_gallery.py`: build a protected gallery from an explicit frozen enrollment manifest.
+- `validate_recognition_manifests.py`: prove split disjointness, hashes, decodeability and identity rules.
+- `evaluate_recognition.py`: create private open-set search scores from frozen probe manifests.
+- `calibrate_recognition.py`: validation-only open-set threshold selection from saved search scores.
+- `run_demo.py`: fail-closed sequential-video or bounded-queue webcam runtime.

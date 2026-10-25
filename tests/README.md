@@ -7,3 +7,7 @@
 - `fixtures/`: synthetic or explicitly authorized non-public fixtures only.
 
 Passing synthetic tests proves implementation behavior, not real-data accuracy.
+
+Runtime unit coverage includes gallery normalization/hash/tie/deletion behavior,
+PAD crop color/shape/clipping, validation threshold selection, PAD-before-recognition
+ordering, spoof/unknown/reset transitions and latest-frame queue overflow.

@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "confirmed_at": "2026-10-25T18:45:00+05:30",
+  "confirmed_by": "user_authorization",
+  "folder_semantics": "one numeric folder represents one person",
+  "image_semantics": "genuine bona-fide face images of that folder's person",
+  "identity_exposure": "numeric folder ID remains a pseudonymous application ID",
+  "scope": {
+    "candidate_subjects": 234,
+    "dataset_root": "data/processed/frad_legacy_crops"
+  },
+  "limitations": [
+    "Capture-session and device metadata remain unverified.",
+    "This confirmation does not authorize random-frame leakage across evaluation splits."
+  ]
+}

@@ -1,0 +1,38 @@
+# Candidate runtime contract. Production startup intentionally remains blocked
+# until gallery_sha256, recognition threshold, and margin are produced from a
+# frozen enrollment/validation protocol. Do not fill these from test results.
+schema_version: 1
+release_id: faceguard-v2-development
+providers:
+  - CPUExecutionProvider
+face:
+  model_root: models/private/insightface
+  pack: buffalo_m
+  detector_file: det_2.5g.onnx
+  detector_sha256: 041f73f47371333d1d17a6fee6c8ab4e6aecabefe398ff32cca4e2d5eaee0af9
+  recognizer_file: w600k_r50.onnx
+  recognizer_sha256: 4c06341c33c2ca1f86781dab0e829f88ad5b64be9fba56e56bc9ebdefc619e43
+  gallery_file: models/private/gallery/gallery.npz
+  gallery_sha256: null
+  threshold: null
+  min_top1_top2_margin: null
+pad:
+  file: models/private/pad_candidate/mobilenetv3_pad.onnx
+  sha256: bd8bcc251df7b09285893f51dc35a3f7bd3d6e78c4be5641f49a4130f30e1359
+  threshold: 0.7626009583473206
+  crop_scale: 1.3
+  max_clipped_fraction: 0.2
+  input_size: 224
+  mean: [0.485, 0.456, 0.406]
+  std: [0.229, 0.224, 0.225]
+runtime:
+  # Initial development values from the blueprint; calibrate/freeze before release.
+  pad_min_observations: 8
+  max_track_gap_ms: 500.0
+  min_iou: 0.3
+  min_detection_score: 0.6
+  min_face_size_px: 80
+  min_blur_variance: 40.0
+  min_mean_brightness: 40.0
+  max_mean_brightness: 215.0
+  frame_queue_size: 2

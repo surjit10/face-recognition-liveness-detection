@@ -1,6 +1,6 @@
 schema_version: 1
 project_id: faceguard-ai-v2
-last_updated: "2026-10-24T17:22:48+05:30"
+last_updated: "2026-10-25T18:45:00+05:30"
 allowed_states: [UNRESOLVED, DISCOVERED, VERIFIED, FROZEN]
 decisions:
   - id: FRAD_PERMISSION
@@ -37,13 +37,20 @@ decisions:
       - data/manifests/frad_subjects.csv
     notes: "Approved full cohort of 234 candidate subjects with 1 exact duplicate excluded."
   - id: FRAD_LABEL_MEANING
-    state: UNRESOLVED
-    value: null
-    evidence: []
-    decided_by: null
-    decided_at: null
-    applies_to: []
-    notes: "Verify one numeric folder equals one opted-in person and define bona-fide semantics."
+    state: VERIFIED
+    value:
+      one_numeric_folder_per_person: true
+      image_class: bona_fide
+      identity_key: numeric_folder_id
+      identity_key_is_pseudonymous: true
+    evidence:
+      - reports/audits/frad_identity_confirmation.json
+    decided_by: user_authorization
+    decided_at: "2026-10-25T18:45:00+05:30"
+    applies_to:
+      - data/processed/frad_legacy_crops
+      - models/private/frad_candidate_embeddings/frad_embeddings.npz
+    notes: "User confirmed each numeric folder contains genuine images of exactly one person."
   - id: FRAD_SESSION_POLICY
     state: UNRESOLVED
     value: null
@@ -93,13 +100,22 @@ decisions:
     applies_to: []
     notes: "Record preflight before package changes."
   - id: LOCAL_RUNTIME_ENVIRONMENT
-    state: UNRESOLVED
-    value: null
-    evidence: []
-    decided_by: null
-    decided_at: null
+    state: DISCOVERED
+    value:
+      python: "3.12.3"
+      primary_provider: CPUExecutionProvider
+      pad_onnx_load_smoke: true
+      pip_check: passed
+      version_lock: requirements-runtime.lock
+      version_lock_sha256: 2e03c24b6fbe909d03b1829c103da5c967bfcf948575123aae0c15ffb68891a3
+      recognition_model_pack_present: false
+    evidence:
+      - reports/environments/environment_local_runtime.json
+      - requirements-runtime.lock
+    decided_by: local_preflight
+    decided_at: "2026-10-25T18:31:18+05:30"
     applies_to: []
-    notes: "Requires a successful runtime smoke test and platform-specific lock."
+    notes: "PAD CPU smoke passed; remains DISCOVERED until the face pack, gallery, complete runtime smoke, and platform lock pass."
   - id: INSIGHTFACE_PACK
     state: VERIFIED
     value:
@@ -118,13 +134,19 @@ decisions:
       - models/private/insightface
     notes: "Official InsightFace buffalo_m ONNX pack (SCRFD 2.5G + ResNet50 ArcFace)."
   - id: PAD_TRAINING_CONFIG
-    state: UNRESOLVED
-    value: null
-    evidence: []
-    decided_by: null
-    decided_at: null
+    state: DISCOVERED
+    value:
+      bundle: data/processed/pad_model_bundle.zip
+      config_member: pad_config.json
+      config_sha256: 0a5a81a694f1c6adf1edaf911327f6138af16ab9009c58998ca97576b0aa2ae6
+      onnx_sha256: bd8bcc251df7b09285893f51dc35a3f7bd3d6e78c4be5641f49a4130f30e1359
+    evidence:
+      - data/processed/pad_model_bundle.zip
+      - configs/runtime.yaml
+    decided_by: artifact_inspection
+    decided_at: "2026-10-25T18:31:18+05:30"
     applies_to: []
-    notes: "Freeze all parameters and module names in the resolved run configuration."
+    notes: "Artifact configuration and hashes were discovered and smoke-tested; dataset permission, label semantics, split evidence, and environment provenance still require verification before FROZEN."
   - id: PAD_THRESHOLD_POLICY
     state: UNRESOLVED
     value: null
