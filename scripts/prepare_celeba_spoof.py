@@ -26,6 +26,10 @@ def main() -> int:
     parser.add_argument("--train-limit", type=int, default=100_000)
     parser.add_argument("--validation-limit", type=int, default=20_000)
     parser.add_argument("--test-limit", type=int, default=40_000)
+    parser.add_argument("--validation-workers", type=int, default=16)
+    parser.add_argument("--progress-every", type=int, default=5_000)
+    parser.add_argument("--no-reuse-existing", action="store_true")
+    parser.add_argument("--overwrite-existing", action="store_true")
     parser.add_argument("--acknowledge-non-commercial-terms", action="store_true")
     args = parser.parse_args()
     if not args.acknowledge_non_commercial_terms:
@@ -43,6 +47,10 @@ def main() -> int:
             train_limit=args.train_limit,
             validation_limit=args.validation_limit,
             test_limit=args.test_limit,
+            validation_workers=args.validation_workers,
+            progress_every=args.progress_every,
+            reuse_existing=not args.no_reuse_existing,
+            overwrite_existing=args.overwrite_existing,
         )
     except PadManifestError as exc:
         parser.exit(2, f"PAD manifest preparation blocked: {exc}\n")

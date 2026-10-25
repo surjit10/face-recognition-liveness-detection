@@ -8,7 +8,9 @@ import json
 import os
 import random
 import tempfile
-from collections import Counter, defaultdict
+import time
+from collections import Counter
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path, PurePosixPath
@@ -30,6 +32,18 @@ class PadRecord:
     source_live_spoof_label: int
     spoof_type: int
     bbox: tuple[float, float, float, float]
+
+
+@dataclass(frozen=True)
+class _PadCandidate:
+    """A metadata-only record; creating one never touches an image or bbox file."""
+
+    relative_path: str
+    subject_id: str
+    source_split: str
+    target_live: int
+    source_live_spoof_label: int
+    spoof_type: int
 
 
 MANIFEST_COLUMNS = (
@@ -152,13 +166,17 @@ def _read_bbox(image_path: Path) -> tuple[float, float, float, float]:
     return bbox  # coordinates use the official 224-reference frame
 
 
-def load_official_records(root: str | Path, source_split: str) -> list[PadRecord]:
+def _load_official_candidates(
+    root: str | Path, source_split: str
+) -> tuple[list[_PadCandidate], int]:
+    """Load and validate label metadata without touching the dataset files."""
+
     if source_split not in {"train", "test"}:
         raise PadManifestError(f"Unsupported official split: {source_split}")
     dataset_root = Path(root).resolve(strict=True)
     metadata_path = _metadata_path(dataset_root, source_split)
     document = json.loads(metadata_path.read_text(encoding="utf-8"))
-    records: list[PadRecord] = []
+    candidates: list[_PadCandidate] = []
     skipped_count = 0
     for raw_path, labels in _label_items(document):
         try:
@@ -194,30 +212,70 @@ def load_official_records(root: str | Path, source_split: str) -> list[PadRecord
                 skipped_count += 1
                 continue
 
-            image_path = dataset_root / relative_path
-            if not image_path.is_file():
-                skipped_count += 1
-                continue
-
-            bbox = _read_bbox(image_path)
             subject_id = _subject_id(relative_path, source_split)
-            records.append(
-                PadRecord(
+            candidates.append(
+                _PadCandidate(
                     relative_path=relative_path,
                     subject_id=subject_id,
                     source_split=source_split,
                     target_live=1 - source_live_spoof,
                     source_live_spoof_label=source_live_spoof,
                     spoof_type=spoof_type,
-                    bbox=bbox,
                 )
             )
         except Exception:
             skipped_count += 1
             continue
 
+    if not candidates:
+        raise PadManifestError(f"Official {source_split} metadata has no valid records")
+    return candidates, skipped_count
+
+
+def _validate_candidate(root: Path, candidate: _PadCandidate) -> PadRecord | None:
+    """Resolve one selected candidate to a physical image and official bbox."""
+
+    try:
+        image_path = root / candidate.relative_path
+        if not image_path.is_file():
+            return None
+        bbox = _read_bbox(image_path)
+    except Exception:
+        return None
+    return PadRecord(
+        relative_path=candidate.relative_path,
+        subject_id=candidate.subject_id,
+        source_split=candidate.source_split,
+        target_live=candidate.target_live,
+        source_live_spoof_label=candidate.source_live_spoof_label,
+        spoof_type=candidate.spoof_type,
+        bbox=bbox,
+    )
+
+
+def load_official_records(root: str | Path, source_split: str) -> list[PadRecord]:
+    """Load every valid record.
+
+    This compatibility API intentionally validates the complete split. The optimized
+    manifest builder below uses metadata candidates and stops at its requested quota.
+    """
+
+    dataset_root = Path(root).resolve(strict=True)
+    candidates, skipped_count = _load_official_candidates(dataset_root, source_split)
+    records = []
+    for candidate in candidates:
+        record = _validate_candidate(dataset_root, candidate)
+        if record is None:
+            skipped_count += 1
+        else:
+            records.append(record)
+
     if skipped_count > 0:
-        print(f"[{source_split.upper()}] Filtered {skipped_count:,} noisy/missing samples; kept {len(records):,} clean records.", flush=True)
+        print(
+            f"[{source_split.upper()}] Filtered {skipped_count:,} noisy/missing samples; "
+            f"kept {len(records):,} clean records.",
+            flush=True,
+        )
 
     if not records:
         raise PadManifestError(f"Official {source_split} metadata has no valid records")
@@ -284,6 +342,225 @@ def _summary(records: list[PadRecord]) -> dict[str, Any]:
     }
 
 
+def _format_duration(seconds: float) -> str:
+    total_seconds = max(0, int(round(seconds)))
+    hours, remainder = divmod(total_seconds, 3_600)
+    minutes, seconds = divmod(remainder, 60)
+    if hours:
+        return f"{hours:d}h {minutes:02d}m {seconds:02d}s"
+    return f"{minutes:d}m {seconds:02d}s"
+
+
+def _manifest_build_spec(
+    root: Path,
+    *,
+    seed: int,
+    validation_subject_fraction: float,
+    train_limit: int | None,
+    validation_limit: int | None,
+    test_limit: int | None,
+    validation_workers: int,
+) -> tuple[dict[str, Any], str]:
+    metadata_sha256 = {
+        split: sha256_file(_metadata_path(root, split)) for split in ("train", "test")
+    }
+    spec = {
+        "algorithm": "quota-first-v2",
+        "metadata_sha256": metadata_sha256,
+        "seed": seed,
+        "validation_subject_fraction": validation_subject_fraction,
+        "validation_workers": validation_workers,
+        "limits": {
+            "train": train_limit,
+            "val": validation_limit,
+            "test": test_limit,
+        },
+    }
+    fingerprint = hashlib.sha256(
+        json.dumps(spec, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    ).hexdigest()
+    return spec, fingerprint
+
+
+def _cached_manifest_report(
+    output: Path, build_fingerprint: str
+) -> dict[str, Any] | None:
+    report_path = output / "pad_split_report.json"
+    if not report_path.is_file():
+        return None
+    try:
+        report = json.loads(report_path.read_text(encoding="utf-8"))
+        if report.get("build_fingerprint") != build_fingerprint:
+            return None
+        for name in ("train", "val", "test"):
+            manifest = output / f"pad_{name}.csv"
+            if not manifest.is_file():
+                return None
+            if sha256_file(manifest) != report["manifest_sha256"][name]:
+                return None
+        # JSON object keys are strings; callers historically receive integer counters.
+        for summary in report["splits"].values():
+            for counter_name in ("target_live_counts", "spoof_type_counts"):
+                summary[counter_name] = {
+                    int(key): value for key, value in summary[counter_name].items()
+                }
+    except (KeyError, OSError, TypeError, ValueError, json.JSONDecodeError):
+        return None
+    print(
+        f"[CACHE] Reusing verified PAD manifests from {output} "
+        f"(fingerprint {build_fingerprint[:12]}).",
+        flush=True,
+    )
+    return report
+
+
+def _select_valid_records(
+    root: Path,
+    candidates: list[_PadCandidate],
+    *,
+    split_name: str,
+    limit: int | None,
+    seed: int,
+    validation_workers: int,
+    progress_every: int,
+) -> list[PadRecord]:
+    """Validate shuffled candidates in bounded batches and stop at the quota."""
+
+    ordered = sorted(candidates, key=lambda row: row.relative_path)
+    capped = limit is not None and limit > 0 and len(ordered) > limit
+    desired = min(limit, len(ordered)) if capped and limit is not None else len(ordered)
+    if desired == 0:
+        raise PadManifestError(f"Split {split_name} has no metadata candidates")
+
+    rng = random.Random(seed)
+    by_label: dict[int, list[_PadCandidate]] = {0: [], 1: []}
+    for candidate in ordered:
+        by_label[candidate.target_live].append(candidate)
+    for group in by_label.values():
+        rng.shuffle(group)
+
+    if capped:
+        targets = {0: desired // 2, 1: desired - (desired // 2)}
+    else:
+        targets = {label: len(group) for label, group in by_label.items()}
+
+    workers = max(1, validation_workers)
+    batch_size = max(64, workers * 8)
+    state: dict[str, Any] = {
+        "checked": 0,
+        "valid": 0,
+        "rejected": 0,
+        "next_report": max(1, progress_every),
+        "last_report": time.monotonic(),
+        "fail_fast_checked": False,
+    }
+    selected: list[PadRecord] = []
+    checked_paths: set[str] = set()
+    spare_records: list[PadRecord] = []
+    stage_started = time.monotonic()
+
+    print(
+        f"[CPU/I-O][{split_name.upper()}] Metadata candidates: {len(ordered):,}; "
+        f"validating up to {desired:,} samples with {workers} workers. "
+        "GPU idle is expected during this stage.",
+        flush=True,
+    )
+
+    def report_progress(force: bool = False) -> None:
+        now = time.monotonic()
+        if not force and state["checked"] < state["next_report"] and now - state["last_report"] < 10:
+            return
+        elapsed = max(now - stage_started, 1e-9)
+        checked_rate = state["checked"] / elapsed
+        selected_rate = len(selected) / elapsed
+        remaining = max(0, desired - len(selected))
+        eta = remaining / selected_rate if selected_rate > 0 else float("inf")
+        percent = 100.0 * min(len(selected), desired) / desired
+        eta_text = _format_duration(eta) if eta != float("inf") else "calculating"
+        print(
+            f"[CPU/I-O][{split_name.upper()}][ACTIVE] "
+            f"{len(selected):,}/{desired:,} selected "
+            f"({percent:5.1f}%) | {state['checked']:,} checked | "
+            f"{state['rejected']:,} rejected | {checked_rate:,.1f} files/s | "
+            f"elapsed {_format_duration(elapsed)} | ETA {eta_text}",
+            flush=True,
+        )
+        state["next_report"] = state["checked"] + max(1, progress_every)
+        state["last_report"] = now
+
+    def validate_until(
+        executor: ThreadPoolExecutor,
+        pool: list[_PadCandidate],
+        needed: int,
+    ) -> None:
+        cursor = 0
+        accepted_here = 0
+        while cursor < len(pool) and accepted_here < needed:
+            batch = pool[cursor : cursor + batch_size]
+            cursor += len(batch)
+            results = executor.map(lambda row: _validate_candidate(root, row), batch)
+            for candidate, record in zip(batch, results):
+                checked_paths.add(candidate.relative_path)
+                state["checked"] += 1
+                if record is None:
+                    state["rejected"] += 1
+                else:
+                    state["valid"] += 1
+                    if accepted_here < needed:
+                        selected.append(record)
+                        accepted_here += 1
+                    else:
+                        spare_records.append(record)
+
+            if (
+                not state["fail_fast_checked"]
+                and state["checked"] >= 1_024
+            ):
+                state["fail_fast_checked"] = True
+                valid_ratio = state["valid"] / state["checked"]
+                if valid_ratio < 0.05:
+                    raise PadManifestError(
+                        f"Only {state['valid']:,}/{state['checked']:,} initial "
+                        f"{split_name} candidates were valid ({valid_ratio:.1%}). "
+                        "Check the dataset root and CelebA-Spoof file layout."
+                    )
+            report_progress()
+
+    with ThreadPoolExecutor(max_workers=workers, thread_name_prefix="pad-manifest") as executor:
+        for label in (0, 1):
+            validate_until(executor, by_label[label], targets[label])
+
+        if len(selected) < desired:
+            # A class may not contain enough usable records. Preserve the requested
+            # total, when possible, using already-validated spares and unchecked rows.
+            needed = desired - len(selected)
+            selected.extend(spare_records[:needed])
+            needed = desired - len(selected)
+            if needed:
+                fallback = [
+                    candidate
+                    for candidate in ordered
+                    if candidate.relative_path not in checked_paths
+                ]
+                rng.shuffle(fallback)
+                validate_until(executor, fallback, needed)
+
+    if capped and len(selected) < desired:
+        raise PadManifestError(
+            f"Split {split_name} could supply only {len(selected):,}/{desired:,} "
+            "valid samples after exhausting its metadata candidates"
+        )
+    if not selected:
+        raise PadManifestError(f"Split {split_name} has no valid physical samples")
+    report_progress(force=True)
+    print(
+        f"[CPU/I-O][{split_name.upper()}][COMPLETE] Selected {len(selected[:desired]):,} "
+        f"samples in {_format_duration(time.monotonic() - stage_started)}.",
+        flush=True,
+    )
+    return sorted(selected[:desired], key=lambda row: row.relative_path)
+
+
 def prepare_celeba_spoof_manifests(
     *,
     dataset_root: str | Path,
@@ -293,16 +570,51 @@ def prepare_celeba_spoof_manifests(
     train_limit: int | None = 100_000,
     validation_limit: int | None = 20_000,
     test_limit: int | None = 40_000,
+    validation_workers: int = 16,
+    progress_every: int = 5_000,
+    reuse_existing: bool = True,
+    overwrite_existing: bool = False,
 ) -> dict[str, Any]:
     root = Path(dataset_root).resolve(strict=True)
     output = Path(output_dir).resolve()
-    if output.exists() and any(output.iterdir()):
-        raise PadManifestError(f"Output directory is not empty: {output}")
     if not 0.05 <= validation_subject_fraction <= 0.3:
         raise PadManifestError("validation_subject_fraction must be in [0.05, 0.3]")
+    if validation_workers < 1:
+        raise PadManifestError("validation_workers must be at least 1")
 
-    official_train = load_official_records(root, "train")
-    official_test = load_official_records(root, "test")
+    build_spec, build_fingerprint = _manifest_build_spec(
+        root,
+        seed=seed,
+        validation_subject_fraction=validation_subject_fraction,
+        train_limit=train_limit,
+        validation_limit=validation_limit,
+        test_limit=test_limit,
+        validation_workers=validation_workers,
+    )
+    if reuse_existing:
+        cached = _cached_manifest_report(output, build_fingerprint)
+        if cached is not None:
+            return cached
+    if output.exists() and any(output.iterdir()) and not overwrite_existing:
+        raise PadManifestError(
+            f"Output directory contains no reusable manifest cache: {output}. "
+            "Use overwrite_existing=True to replace its managed manifest files."
+        )
+
+    official_train, train_metadata_skipped = _load_official_candidates(root, "train")
+    official_test, test_metadata_skipped = _load_official_candidates(root, "test")
+    print(
+        f"[CPU][METADATA] Loaded {len(official_train):,} train and "
+        f"{len(official_test):,} test candidates without scanning image files.",
+        flush=True,
+    )
+    if train_metadata_skipped or test_metadata_skipped:
+        print(
+            f"[CPU][METADATA] Filtered inconsistent rows: train={train_metadata_skipped:,}, "
+            f"test={test_metadata_skipped:,}.",
+            flush=True,
+        )
+
     train_subjects = sorted({row.subject_id for row in official_train})
     rng = random.Random(seed)
     rng.shuffle(train_subjects)
@@ -314,9 +626,33 @@ def prepare_celeba_spoof_manifests(
     validation_records = [row for row in official_train if row.subject_id in validation_subjects]
 
     split_records = {
-        "train": _balanced_cap(train_records, train_limit, seed + 1),
-        "val": _balanced_cap(validation_records, validation_limit, seed + 2),
-        "test": _balanced_cap(official_test, test_limit, seed + 3),
+        "train": _select_valid_records(
+            root,
+            train_records,
+            split_name="train",
+            limit=train_limit,
+            seed=seed + 1,
+            validation_workers=validation_workers,
+            progress_every=progress_every,
+        ),
+        "val": _select_valid_records(
+            root,
+            validation_records,
+            split_name="val",
+            limit=validation_limit,
+            seed=seed + 2,
+            validation_workers=validation_workers,
+            progress_every=progress_every,
+        ),
+        "test": _select_valid_records(
+            root,
+            official_test,
+            split_name="test",
+            limit=test_limit,
+            seed=seed + 3,
+            validation_workers=validation_workers,
+            progress_every=progress_every,
+        ),
     }
     subject_sets = {
         name: {row.subject_id for row in records} for name, records in split_records.items()
@@ -344,10 +680,20 @@ def prepare_celeba_spoof_manifests(
         manifest_paths[name] = path
 
     report = {
-        "schema_version": 1,
+        "schema_version": 2,
         "created_at": datetime.now(timezone.utc).isoformat(),
         "dataset": "CelebA-Spoof official metadata",
         "dataset_root_name": root.name,
+        "build_fingerprint": build_fingerprint,
+        "build_spec": build_spec,
+        "selection": {
+            "strategy": "metadata-first balanced quota with bounded parallel validation",
+            "validation_workers": validation_workers,
+            "metadata_rows_filtered": {
+                "train": train_metadata_skipped,
+                "test": test_metadata_skipped,
+            },
+        },
         "label_mapping": {"target_live_1": "bona_fide", "target_live_0": "attack"},
         "source_label_mapping": {"0": "live", "1": "spoof"},
         "seed": seed,
