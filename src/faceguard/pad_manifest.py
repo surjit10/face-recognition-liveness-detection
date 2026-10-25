@@ -5,6 +5,7 @@ from __future__ import annotations
 import csv
 import hashlib
 import json
+import math
 import os
 import random
 import tempfile
@@ -16,11 +17,17 @@ from datetime import datetime, timezone
 from pathlib import Path, PurePosixPath
 from typing import Any, Iterable
 
+from PIL import Image, ImageOps
+
 from .config import sha256_file
 
 
 class PadManifestError(RuntimeError):
     """PAD metadata is missing, ambiguous, or unsafe to use."""
+
+
+DEFAULT_CROP_SCALE = 1.3
+DEFAULT_MAX_CLIPPED_FRACTION = 0.2
 
 
 @dataclass(frozen=True)
@@ -161,9 +168,41 @@ def _read_bbox(image_path: Path) -> tuple[float, float, float, float]:
         bbox = tuple(float(value) for value in tokens[:4])
     except ValueError as exc:
         raise PadManifestError(f"Invalid bounding box numbers: {path}") from exc
+    if not all(math.isfinite(value) for value in bbox):
+        raise PadManifestError(f"Bounding box contains non-finite values: {path}")
     if bbox[2] <= 0 or bbox[3] <= 0:
         raise PadManifestError(f"Bounding box has non-positive size: {path}")
     return bbox  # coordinates use the official 224-reference frame
+
+
+def _crop_is_valid(
+    image_size: tuple[int, int],
+    bbox_224: tuple[float, float, float, float],
+    crop_scale: float,
+    max_clipped_fraction: float,
+) -> bool:
+    """Mirror train_pad.expanded_crop geometry without retaining image pixels."""
+
+    width, height = image_size
+    x, y, box_width, box_height = bbox_224
+    x *= width / 224.0
+    box_width *= width / 224.0
+    y *= height / 224.0
+    box_height *= height / 224.0
+    side = crop_scale * max(box_width, box_height)
+    center_x = x + box_width / 2.0
+    center_y = y + box_height / 2.0
+    left = math.floor(center_x - side / 2.0)
+    top = math.floor(center_y - side / 2.0)
+    right = math.ceil(center_x + side / 2.0)
+    bottom = math.ceil(center_y + side / 2.0)
+    requested_area = max(1, right - left) * max(1, bottom - top)
+    clipped_width = min(width, right) - max(0, left)
+    clipped_height = min(height, bottom) - max(0, top)
+    if clipped_width <= 0 or clipped_height <= 0:
+        return False
+    clipped_fraction = 1.0 - (clipped_width * clipped_height / requested_area)
+    return clipped_fraction <= max_clipped_fraction
 
 
 def _load_official_candidates(
@@ -232,14 +271,31 @@ def _load_official_candidates(
     return candidates, skipped_count
 
 
-def _validate_candidate(root: Path, candidate: _PadCandidate) -> PadRecord | None:
-    """Resolve one selected candidate to a physical image and official bbox."""
+def _validate_candidate(
+    root: Path,
+    candidate: _PadCandidate,
+    *,
+    crop_scale: float = DEFAULT_CROP_SCALE,
+    max_clipped_fraction: float = DEFAULT_MAX_CLIPPED_FRACTION,
+) -> PadRecord | None:
+    """Decode one candidate and verify its bbox against the training crop contract."""
 
     try:
         image_path = root / candidate.relative_path
         if not image_path.is_file():
             return None
         bbox = _read_bbox(image_path)
+        with Image.open(image_path) as source:
+            image = ImageOps.exif_transpose(source).convert("RGB")
+            image.load()
+            image_size = image.size
+        if not _crop_is_valid(
+            image_size,
+            bbox,
+            crop_scale,
+            max_clipped_fraction,
+        ):
+            return None
     except Exception:
         return None
     return PadRecord(
@@ -360,16 +416,20 @@ def _manifest_build_spec(
     validation_limit: int | None,
     test_limit: int | None,
     validation_workers: int,
+    crop_scale: float,
+    max_clipped_fraction: float,
 ) -> tuple[dict[str, Any], str]:
     metadata_sha256 = {
         split: sha256_file(_metadata_path(root, split)) for split in ("train", "test")
     }
     spec = {
-        "algorithm": "quota-first-v2",
+        "algorithm": "quota-first-v4-decode-and-crop-validation",
         "metadata_sha256": metadata_sha256,
         "seed": seed,
         "validation_subject_fraction": validation_subject_fraction,
         "validation_workers": validation_workers,
+        "crop_scale": crop_scale,
+        "max_clipped_fraction": max_clipped_fraction,
         "limits": {
             "train": train_limit,
             "val": validation_limit,
@@ -423,6 +483,8 @@ def _select_valid_records(
     seed: int,
     validation_workers: int,
     progress_every: int,
+    crop_scale: float = DEFAULT_CROP_SCALE,
+    max_clipped_fraction: float = DEFAULT_MAX_CLIPPED_FRACTION,
 ) -> list[PadRecord]:
     """Validate shuffled candidates in bounded batches and stop at the quota."""
 
@@ -498,7 +560,15 @@ def _select_valid_records(
         while cursor < len(pool) and accepted_here < needed:
             batch = pool[cursor : cursor + batch_size]
             cursor += len(batch)
-            results = executor.map(lambda row: _validate_candidate(root, row), batch)
+            results = executor.map(
+                lambda row: _validate_candidate(
+                    root,
+                    row,
+                    crop_scale=crop_scale,
+                    max_clipped_fraction=max_clipped_fraction,
+                ),
+                batch,
+            )
             for candidate, record in zip(batch, results):
                 checked_paths.add(candidate.relative_path)
                 state["checked"] += 1
@@ -572,6 +642,8 @@ def prepare_celeba_spoof_manifests(
     test_limit: int | None = 40_000,
     validation_workers: int = 16,
     progress_every: int = 5_000,
+    crop_scale: float = DEFAULT_CROP_SCALE,
+    max_clipped_fraction: float = DEFAULT_MAX_CLIPPED_FRACTION,
     reuse_existing: bool = True,
     overwrite_existing: bool = False,
 ) -> dict[str, Any]:
@@ -581,6 +653,10 @@ def prepare_celeba_spoof_manifests(
         raise PadManifestError("validation_subject_fraction must be in [0.05, 0.3]")
     if validation_workers < 1:
         raise PadManifestError("validation_workers must be at least 1")
+    if not math.isfinite(crop_scale) or crop_scale <= 0:
+        raise PadManifestError("crop_scale must be a positive finite number")
+    if not math.isfinite(max_clipped_fraction) or not 0 <= max_clipped_fraction < 1:
+        raise PadManifestError("max_clipped_fraction must be in [0, 1)")
 
     build_spec, build_fingerprint = _manifest_build_spec(
         root,
@@ -590,6 +666,8 @@ def prepare_celeba_spoof_manifests(
         validation_limit=validation_limit,
         test_limit=test_limit,
         validation_workers=validation_workers,
+        crop_scale=crop_scale,
+        max_clipped_fraction=max_clipped_fraction,
     )
     if reuse_existing:
         cached = _cached_manifest_report(output, build_fingerprint)
@@ -615,6 +693,30 @@ def prepare_celeba_spoof_manifests(
             flush=True,
         )
 
+    # The official protocol is subject-disjoint, but some distributed mirrors contain
+    # a small number of train rows whose identity directory also occurs in test. Keep
+    # the official test split intact and quarantine those identities from all model
+    # development data before deriving the train/validation split. Doing this at the
+    # metadata stage also avoids an expensive physical-file scan that can only fail at
+    # the final leakage check.
+    test_subjects = {row.subject_id for row in official_test}
+    overlapping_subjects = {
+        row.subject_id for row in official_train if row.subject_id in test_subjects
+    }
+    overlapping_train_rows = sum(
+        row.subject_id in overlapping_subjects for row in official_train
+    )
+    if overlapping_subjects:
+        official_train = [
+            row for row in official_train if row.subject_id not in overlapping_subjects
+        ]
+        print(
+            f"[CPU][METADATA] Quarantined {overlapping_train_rows:,} train rows across "
+            f"{len(overlapping_subjects):,} subject IDs also present in official test "
+            "metadata; the official test rows were preserved.",
+            flush=True,
+        )
+
     train_subjects = sorted({row.subject_id for row in official_train})
     rng = random.Random(seed)
     rng.shuffle(train_subjects)
@@ -634,6 +736,8 @@ def prepare_celeba_spoof_manifests(
             seed=seed + 1,
             validation_workers=validation_workers,
             progress_every=progress_every,
+            crop_scale=crop_scale,
+            max_clipped_fraction=max_clipped_fraction,
         ),
         "val": _select_valid_records(
             root,
@@ -643,6 +747,8 @@ def prepare_celeba_spoof_manifests(
             seed=seed + 2,
             validation_workers=validation_workers,
             progress_every=progress_every,
+            crop_scale=crop_scale,
+            max_clipped_fraction=max_clipped_fraction,
         ),
         "test": _select_valid_records(
             root,
@@ -652,6 +758,8 @@ def prepare_celeba_spoof_manifests(
             seed=seed + 3,
             validation_workers=validation_workers,
             progress_every=progress_every,
+            crop_scale=crop_scale,
+            max_clipped_fraction=max_clipped_fraction,
         ),
     }
     subject_sets = {
@@ -680,18 +788,25 @@ def prepare_celeba_spoof_manifests(
         manifest_paths[name] = path
 
     report = {
-        "schema_version": 2,
+        "schema_version": 3,
         "created_at": datetime.now(timezone.utc).isoformat(),
         "dataset": "CelebA-Spoof official metadata",
         "dataset_root_name": root.name,
         "build_fingerprint": build_fingerprint,
         "build_spec": build_spec,
         "selection": {
-            "strategy": "metadata-first balanced quota with bounded parallel validation",
+            "strategy": "metadata-first balanced quota with bounded parallel image/crop validation",
             "validation_workers": validation_workers,
+            "crop_scale": crop_scale,
+            "max_clipped_fraction": max_clipped_fraction,
             "metadata_rows_filtered": {
                 "train": train_metadata_skipped,
                 "test": test_metadata_skipped,
+            },
+            "cross_split_quarantine": {
+                "policy": "preserve official test; exclude overlapping subjects from train and validation",
+                "subjects": len(overlapping_subjects),
+                "train_rows": overlapping_train_rows,
             },
         },
         "label_mapping": {"target_live_1": "bona_fide", "target_live_0": "attack"},

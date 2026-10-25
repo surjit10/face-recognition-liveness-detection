@@ -30,6 +30,10 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_ROOT / "src"))
 
 from faceguard.config import sha256_file  # noqa: E402
+from faceguard.pad_manifest import (  # noqa: E402
+    DEFAULT_CROP_SCALE,
+    DEFAULT_MAX_CLIPPED_FRACTION,
+)
 from faceguard.pad_metrics import confusion, rates, roc_auc, select_eer_threshold  # noqa: E402
 
 
@@ -329,10 +333,22 @@ def main() -> int:
     parser.add_argument("--batch-size-per-gpu", type=int, default=64)
     parser.add_argument("--workers-per-gpu", type=int, default=2)
     parser.add_argument("--seed", type=int, default=42)
-    parser.add_argument("--crop-scale", type=float, default=1.3)
-    parser.add_argument("--max-clipped-fraction", type=float, default=0.2)
+    parser.add_argument("--crop-scale", type=float, default=DEFAULT_CROP_SCALE)
+    parser.add_argument(
+        "--max-clipped-fraction",
+        type=float,
+        default=DEFAULT_MAX_CLIPPED_FRACTION,
+    )
     parser.add_argument("--early-stopping-patience", type=int, default=4)
+    parser.add_argument("--acknowledge-non-commercial-terms", action="store_true")
     args = parser.parse_args()
+
+    if not args.acknowledge_non_commercial_terms:
+        parser.exit(
+            2,
+            "blocked: review the official CelebA-Spoof non-commercial research "
+            "agreement and pass --acknowledge-non-commercial-terms\n",
+        )
 
     if not 1 <= args.head_epochs <= 5:
         raise RuntimeError("--head-epochs must be in [1, 5]")
@@ -340,6 +356,13 @@ def main() -> int:
         raise RuntimeError("--finetune-epochs must be in [1, 15]")
     if args.batch_size_per_gpu < 1 or args.workers_per_gpu < 0:
         raise RuntimeError("Batch size must be positive and worker count cannot be negative")
+    if not math.isfinite(args.crop_scale) or args.crop_scale <= 0:
+        raise RuntimeError("--crop-scale must be a positive finite number")
+    if (
+        not math.isfinite(args.max_clipped_fraction)
+        or not 0 <= args.max_clipped_fraction < 1
+    ):
+        raise RuntimeError("--max-clipped-fraction must be in [0, 1)")
 
     if not torch.cuda.is_available():
         raise RuntimeError("CUDA is required for PAD fine-tuning")
@@ -635,6 +658,7 @@ def main() -> int:
             dynamic_axes={"input": {0: "batch"}, "logits": {0: "batch"}},
             opset_version=17,
             do_constant_folding=True,
+            dynamo=False,
         )
         import onnxruntime as ort
 

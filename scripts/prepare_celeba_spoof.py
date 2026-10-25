@@ -28,6 +28,8 @@ def main() -> int:
     parser.add_argument("--test-limit", type=int, default=40_000)
     parser.add_argument("--validation-workers", type=int, default=16)
     parser.add_argument("--progress-every", type=int, default=5_000)
+    parser.add_argument("--crop-scale", type=float, default=1.3)
+    parser.add_argument("--max-clipped-fraction", type=float, default=0.2)
     parser.add_argument("--no-reuse-existing", action="store_true")
     parser.add_argument("--overwrite-existing", action="store_true")
     parser.add_argument("--acknowledge-non-commercial-terms", action="store_true")
@@ -49,6 +51,8 @@ def main() -> int:
             test_limit=args.test_limit,
             validation_workers=args.validation_workers,
             progress_every=args.progress_every,
+            crop_scale=args.crop_scale,
+            max_clipped_fraction=args.max_clipped_fraction,
             reuse_existing=not args.no_reuse_existing,
             overwrite_existing=args.overwrite_existing,
         )

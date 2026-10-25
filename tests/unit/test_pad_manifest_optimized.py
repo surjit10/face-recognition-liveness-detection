@@ -1,6 +1,8 @@
+import csv
 import json
 from pathlib import Path
 
+from PIL import Image
 import pytest
 
 import faceguard.pad_manifest as pad_manifest
@@ -17,9 +19,9 @@ def _labels(spoof_type: int, live_spoof: int) -> list[int]:
 def _write_sample(root: Path, relative_path: str) -> None:
     image = root / relative_path
     image.parent.mkdir(parents=True, exist_ok=True)
-    image.touch()
+    Image.new("RGB", (100, 100), color=(128, 128, 128)).save(image, format="JPEG")
     image.with_name(f"{image.stem}_BB.txt").write_text(
-        "1 2 20 30\n", encoding="utf-8"
+        "50 50 40 40\n", encoding="utf-8"
     )
 
 
@@ -42,7 +44,13 @@ def test_quota_validation_stops_before_scanning_all_candidates(
 
     checked: list[str] = []
 
-    def validate(_root: Path, candidate: pad_manifest._PadCandidate) -> PadRecord:
+    def validate(
+        _root: Path,
+        candidate: pad_manifest._PadCandidate,
+        *,
+        crop_scale: float = pad_manifest.DEFAULT_CROP_SCALE,
+        max_clipped_fraction: float = pad_manifest.DEFAULT_MAX_CLIPPED_FRACTION,
+    ) -> PadRecord:
         checked.append(candidate.relative_path)
         return PadRecord(
             relative_path=candidate.relative_path,
@@ -129,3 +137,60 @@ def test_prepare_reuses_verified_manifest_cache(
 
     assert second["build_fingerprint"] == first["build_fingerprint"]
     assert second["splits"] == first["splits"]
+
+
+def test_prepare_quarantines_train_subjects_also_present_in_official_test(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    train_entries: dict[str, list[int]] = {}
+    for subject_number in range(1, 11):
+        subject = f"{subject_number:04d}"
+        for folder, labels in (("live", _labels(0, 0)), ("spoof", _labels(1, 1))):
+            relative_path = f"Data/train/{subject}/{folder}/1.jpg"
+            train_entries[relative_path] = labels
+            _write_sample(tmp_path, relative_path)
+
+    test_entries: dict[str, list[int]] = {}
+    for subject in ("0001", "1001"):
+        for folder, labels in (("live", _labels(0, 0)), ("spoof", _labels(1, 1))):
+            relative_path = f"Data/test/{subject}/{folder}/1.jpg"
+            test_entries[relative_path] = labels
+            _write_sample(tmp_path, relative_path)
+
+    metadata = tmp_path / "metas" / "intra_test"
+    metadata.mkdir(parents=True)
+    (metadata / "train_label.json").write_text(
+        json.dumps(train_entries), encoding="utf-8"
+    )
+    (metadata / "test_label.json").write_text(
+        json.dumps(test_entries), encoding="utf-8"
+    )
+
+    output = tmp_path / "manifests"
+    report = prepare_celeba_spoof_manifests(
+        dataset_root=tmp_path,
+        output_dir=output,
+        validation_subject_fraction=0.1,
+        train_limit=4,
+        validation_limit=2,
+        test_limit=4,
+        validation_workers=2,
+        progress_every=100,
+    )
+
+    development_subjects: set[str] = set()
+    for name in ("train", "val"):
+        with (output / f"pad_{name}.csv").open(newline="", encoding="utf-8") as handle:
+            development_subjects.update(row["subject_id"] for row in csv.DictReader(handle))
+    with (output / "pad_test.csv").open(newline="", encoding="utf-8") as handle:
+        test_subjects = {row["subject_id"] for row in csv.DictReader(handle)}
+
+    assert "0001" not in development_subjects
+    assert "0001" in test_subjects
+    assert development_subjects.isdisjoint(test_subjects)
+    assert report["selection"]["cross_split_quarantine"] == {
+        "policy": "preserve official test; exclude overlapping subjects from train and validation",
+        "subjects": 1,
+        "train_rows": 2,
+    }
+    assert "Quarantined 2 train rows across 1 subject IDs" in capsys.readouterr().out

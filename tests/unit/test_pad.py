@@ -1,6 +1,7 @@
 from pathlib import Path
 import json
 import numpy as np
+from PIL import Image
 import pytest
 
 from faceguard.pad_metrics import confusion, rates, roc_auc, select_eer_threshold
@@ -11,6 +12,7 @@ from faceguard.pad_manifest import (
     _read_bbox,
     _safe_relative_path,
     _subject_id,
+    load_official_records,
     prepare_celeba_spoof_manifests,
 )
 
@@ -56,3 +58,39 @@ def test_pad_manifest_balanced_cap() -> None:
     capped = _balanced_cap(records, limit=2, seed=42)
     assert len(capped) == 2
     assert {r.target_live for r in capped} == {0, 1}
+
+
+def test_load_official_records_filters_inconsistent_spoof_type(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    def labels(spoof_type: int, live_spoof: int) -> list[int]:
+        values = [0] * 44
+        values[40] = spoof_type
+        values[43] = live_spoof
+        return values
+
+    entries = {
+        "Data/train/0001/live/valid.jpg": labels(0, 0),
+        # Mirrors noisy official rows such as Data/train/4154/live/001021.jpg.
+        "Data/train/4154/live/inconsistent.jpg": labels(7, 0),
+        "Data/train/0002/spoof/valid.jpg": labels(7, 1),
+    }
+    metadata = tmp_path / "metas" / "intra_test"
+    metadata.mkdir(parents=True)
+    (metadata / "train_label.json").write_text(json.dumps(entries), encoding="utf-8")
+
+    for relative_path in entries:
+        image_path = tmp_path / relative_path
+        image_path.parent.mkdir(parents=True, exist_ok=True)
+        Image.new("RGB", (100, 100), color=(128, 128, 128)).save(image_path, format="JPEG")
+        image_path.with_name(f"{image_path.stem}_BB.txt").write_text(
+            "50 50 40 40\n", encoding="utf-8"
+        )
+
+    records = load_official_records(tmp_path, "train")
+
+    assert {row.relative_path for row in records} == {
+        "Data/train/0001/live/valid.jpg",
+        "Data/train/0002/spoof/valid.jpg",
+    }
+    assert "Filtered 1 noisy/missing samples; kept 2 clean records" in capsys.readouterr().out
