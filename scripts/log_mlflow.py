@@ -38,7 +38,7 @@ def _metrics(name: str, report: dict) -> dict[str, float]:
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--tracking-uri", default=f"sqlite:///{(PROJECT_ROOT / 'mlflow.db').as_posix()}"
+        "--tracking-uri", default=f"sqlite:///{(PROJECT_ROOT.resolve() / 'mlflow.db').as_posix()}"
     )
     parser.add_argument("--experiment", default="faceguard-prototype")
     parser.add_argument("--run-name", default=None)
