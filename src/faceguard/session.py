@@ -12,7 +12,7 @@ from typing import Any, Callable
 import cv2
 import numpy as np
 
-from .pipeline import VerificationResult, VideoVerifier
+from .pipeline import EnrollmentObservation, VerificationResult, VideoVerifier
 from .presentation import safe_event
 from .runtime import FramePacket, LatestFrameQueue
 from .runtime_config import RuntimeConfig
@@ -341,6 +341,13 @@ class VerificationSession:
                 latest = self._updates.get_nowait()
             except queue.Empty:
                 return latest
+
+    def enrollment_observation(self, frame_bgr: np.ndarray) -> EnrollmentObservation:
+        """Analyze a copied live frame through the existing serialized ONNX runtime."""
+        if not self.is_running:
+            raise RuntimeError("Camera session is not running")
+        with self._verifier_lock:
+            return self.verifier.enrollment_observation(frame_bgr)
 
     def stop(self, *, wait: bool = True, timeout: float = 3.0) -> None:
         current = self.status

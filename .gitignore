@@ -62,6 +62,7 @@ Thumbs.db
 *.egg-info/
 /reports/private/
 /reports/**/raw/
+/data/local/
 *.zip
 
 # Secrets and credentials

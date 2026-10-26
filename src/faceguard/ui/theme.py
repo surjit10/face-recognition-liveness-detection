@@ -1,4 +1,4 @@
-"""Professional dark visual system for the local desktop application."""
+"""Bright professional visual system for the local desktop application."""
 
 from __future__ import annotations
 
@@ -7,25 +7,25 @@ from tkinter import ttk
 
 
 COLORS = {
-    "background": "#080D17",
-    "surface": "#101827",
-    "surface_alt": "#151F31",
-    "surface_hover": "#1B2940",
-    "border": "#24324A",
-    "text": "#F7F9FC",
-    "muted": "#8FA0B8",
-    "subtle": "#5E708A",
-    "accent": "#4F8CFF",
-    "accent_hover": "#3978E7",
-    "success": "#16A36A",
-    "success_soft": "#123C31",
-    "warning": "#E6A23C",
-    "warning_soft": "#49351A",
-    "danger": "#EF5A6F",
-    "danger_soft": "#4B202A",
-    "neutral": "#7190BA",
-    "neutral_soft": "#1C2D45",
-    "video": "#050810",
+    "background": "#F3F7FC",
+    "surface": "#FFFFFF",
+    "surface_alt": "#EDF3FA",
+    "surface_hover": "#E1EBF8",
+    "border": "#D4E0ED",
+    "text": "#12233F",
+    "muted": "#5F7188",
+    "subtle": "#8392A6",
+    "accent": "#2563EB",
+    "accent_hover": "#1D4ED8",
+    "success": "#0F9F6E",
+    "success_soft": "#DCFCEB",
+    "warning": "#C97808",
+    "warning_soft": "#FFF2D8",
+    "danger": "#DC3655",
+    "danger_soft": "#FFE5EA",
+    "neutral": "#4F6F98",
+    "neutral_soft": "#E4EDF7",
+    "video": "#101827",
 }
 
 FONT_FAMILY = "DejaVu Sans"
@@ -33,6 +33,11 @@ FONT_FAMILY = "DejaVu Sans"
 
 def configure_root(root: tk.Misc) -> None:
     root.configure(bg=COLORS["background"])
+    try:
+        detected = float(root.winfo_fpixels("1i")) / 72.0
+        root.tk.call("tk", "scaling", max(1.0, min(1.35, detected)))
+    except (tk.TclError, ValueError):
+        pass
     style = ttk.Style(root)
     try:
         style.theme_use("clam")
@@ -46,6 +51,34 @@ def configure_root(root: tk.Misc) -> None:
         lightcolor=COLORS["accent"],
         darkcolor=COLORS["accent"],
         thickness=8,
+    )
+    style.configure(
+        "Treeview",
+        background=COLORS["surface"],
+        fieldbackground=COLORS["surface"],
+        foreground=COLORS["text"],
+        bordercolor=COLORS["border"],
+        rowheight=30,
+        font=(FONT_FAMILY, 9),
+    )
+    style.configure(
+        "Treeview.Heading",
+        background=COLORS["surface_alt"],
+        foreground=COLORS["text"],
+        relief="flat",
+        font=(FONT_FAMILY, 9, "bold"),
+    )
+    style.map(
+        "Treeview",
+        background=[("selected", COLORS["accent"])],
+        foreground=[("selected", "#FFFFFF")],
+    )
+    style.configure(
+        "Vertical.TScrollbar",
+        background=COLORS["surface_alt"],
+        troughcolor=COLORS["surface"],
+        bordercolor=COLORS["surface"],
+        arrowcolor=COLORS["muted"],
     )
 
 
@@ -62,14 +95,15 @@ def button(
     if destructive:
         background = COLORS["danger_soft"]
         active = COLORS["danger"]
-    return tk.Button(
+    foreground = "#FFFFFF" if primary else COLORS["text"]
+    result = tk.Button(
         parent,
         text=text,
         command=command,
         font=(FONT_FAMILY, 10, "bold"),
-        fg=COLORS["text"],
+        fg=foreground,
         bg=background,
-        activeforeground=COLORS["text"],
+        activeforeground="#FFFFFF" if primary or destructive else COLORS["text"],
         activebackground=active,
         disabledforeground=COLORS["subtle"],
         relief="flat",
@@ -77,5 +111,11 @@ def button(
         padx=18,
         pady=11,
         cursor="hand2",
-        highlightthickness=0,
+        highlightthickness=1,
+        highlightbackground=background,
+        highlightcolor=COLORS["accent"],
+        takefocus=True,
     )
+    result.bind("<Enter>", lambda _event: result.configure(bg=active))
+    result.bind("<Leave>", lambda _event: result.configure(bg=background))
+    return result

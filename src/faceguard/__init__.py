@@ -1,1 +1,3 @@
-"""FaceGuard AI v2: phase-gated recognition and presentation-attack detection."""
+"""FaceGuard AI: local academic recognition and presentation-attack prototype."""
+
+__version__ = "0.1.0"

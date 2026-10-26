@@ -21,13 +21,13 @@ def _result(status, reason, state="RETRY", person_id=None):
 @pytest.mark.parametrize(
     ("result", "expected"),
     [
-        (_result("retry", "no_face"), "NO FACE"),
+        (_result("retry", "no_face"), "LOOKING FOR FACE"),
         (_result("retry", "multiple_faces"), "MULTIPLE FACES"),
-        (_result("retry", "face_too_small"), "HOLD STILL"),
+        (_result("retry", "face_too_small"), "MOVE CLOSER"),
         (_result("retry", "collecting_pad_evidence", "COLLECTING_PAD"), "CHECKING LIVENESS"),
         (
             _result("spoof", "pad_below_threshold", "PAD_FAILED"),
-            "LIVENESS NOT CONFIRMED",
+            "POSSIBLE SPOOF / REJECTED",
         ),
         (_result("unknown", "pad_passed_identity_below_threshold", "UNKNOWN"), "UNKNOWN"),
         (_result("verified", "pad_passed_identity_accepted", "IDENTIFIED", "000"), "VERIFIED: 000"),

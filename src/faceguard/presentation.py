@@ -7,10 +7,14 @@ from typing import Any, Mapping
 
 
 REASON_MESSAGES = {
-    "no_face": "NO FACE",
+    "no_face": "LOOKING FOR FACE",
     "multiple_faces": "MULTIPLE FACES",
     "collecting_pad_evidence": "CHECKING LIVENESS",
-    "pad_below_threshold": "LIVENESS NOT CONFIRMED",
+    "pad_below_threshold": "POSSIBLE SPOOF / REJECTED",
+    "face_too_small": "MOVE CLOSER",
+    "face_too_blurry": "HOLD STILL",
+    "exposure_out_of_range": "IMPROVE LIGHTING",
+    "low_detection_score": "CENTER YOUR FACE",
 }
 
 REASON_GUIDANCE = {
@@ -23,6 +27,9 @@ REASON_GUIDANCE = {
     "face_too_small": "Move closer to the camera.",
     "face_too_blurry": "Hold still and keep the face in focus.",
     "exposure_out_of_range": "Use even lighting and avoid strong backlight.",
+    "low_detection_score": "Center one clearly visible face in the camera view.",
+    "missing_face_box": "Center one clearly visible face in the camera view.",
+    "empty_face_crop": "Move fully into the camera view.",
     "timestamp_regression": "The stream was reset for timing safety.",
     "face_model_error": "Face analysis failed safely. Try restarting the session.",
     "pad_model_error": "Liveness analysis failed safely. Try restarting the session.",
@@ -61,7 +68,7 @@ def operator_message(
         )
         return f"VERIFIED: {display_label}"
     if status == "spoof":
-        return "LIVENESS NOT CONFIRMED"
+        return "POSSIBLE SPOOF / REJECTED"
     if status == "unknown":
         return "UNKNOWN"
     return REASON_MESSAGES.get(getattr(result, "reason", ""), "HOLD STILL")
@@ -101,7 +108,7 @@ def face_annotations(
 
     if reason == "multiple_faces" or len(boxes) > 1:
         return tuple(
-            FaceAnnotation(box, f"FACE {index} · IDENTITY NOT CHECKED", "danger")
+            FaceAnnotation(box, f"FACE {index}: IDENTITY NOT CHECKED", "danger")
             for index, box in enumerate(boxes, start=1)
         )
 
@@ -112,14 +119,14 @@ def face_annotations(
             if identity_labels is not None
             else str(person_id)
         )
-        return (FaceAnnotation(box, f"VERIFIED · {label}", "success"),)
+        return (FaceAnnotation(box, f"VERIFIED: {label}", "success"),)
     if status == "unknown":
         return (FaceAnnotation(box, "UNKNOWN", "warning"),)
     if status == "spoof":
         return (FaceAnnotation(box, "LIVENESS NOT CONFIRMED", "warning"),)
     if reason == "collecting_pad_evidence":
         return (FaceAnnotation(box, "CHECKING LIVENESS", "neutral"),)
-    return (FaceAnnotation(box, "FACE DETECTED · HOLD STILL", "neutral"),)
+    return (FaceAnnotation(box, "FACE DETECTED: HOLD STILL", "neutral"),)
 
 
 def safe_event(sequence: int, result: Any) -> dict[str, object]:

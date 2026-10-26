@@ -1,1 +1,1 @@
-artifact scan passed: 158 tracked/staged path(s) reviewed
+artifact scan passed: 200 publishable path(s) reviewed

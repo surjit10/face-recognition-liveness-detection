@@ -38,9 +38,9 @@ under `models/private/`. They are Git-ignored and are never recreated by the run
   --readiness-report reports/environments/runtime_readiness.json
 ```
 
-Expected: exit code `0`, `"event": "runtime_ready"`, `"camera_opened": false`, every
-face provider is `CPUExecutionProvider`, `"gallery_vectors": 1430`,
-`"gallery_identities": 187`, and the printed face/PAD hashes match
+Expected for the supplied baseline: exit code `0`, `"event": "runtime_ready"`,
+`"camera_opened": false`, every face provider is `CPUExecutionProvider`,
+`"gallery_vectors": 1430`, `"gallery_identities": 187`, and the printed face/PAD hashes match
 `configs/runtime.yaml`. Any mismatch or hash error exits `2`; do not continue to the
 camera until it passes.
 
@@ -58,12 +58,48 @@ providers pass. After the check succeeds, press **Start camera** to open authori
 camera `0` and run the complete pipeline. The same window displays the live preview,
 fail-closed result, PAD progress, FPS, latency, frame age and drop counts.
 
+Use the persistent left navigation for the five application screens:
+
+1. **Verify & attendance** runs the unchanged PAD-before-recognition pipeline. After a
+   verified result, attendance is marked automatically once for that identity on the
+   local calendar day. It is never marked for unknown, retry, or liveness-rejected
+   results. After attendance is saved, the camera stops and the completion result
+   remains visible until the next person is started.
+2. **Enroll person** requires a non-sensitive identity label and explicit consent.
+   Start camera `0`, capture five accepted samples while varying pose slightly, review
+   any duplicate warning, then confirm. The app stores vectors and private metadata,
+   never frames or crops.
+3. **Enrolled users** searches canonical IDs and local display aliases. Inspect shows
+   vector counts and available metadata. Delete requires confirmation, updates the
+   configured gallery hash, and reloads the runtime.
+4. **Attendance register** groups verified events by month and day, filters by month,
+   exports permitted fields to CSV, and deletes all events only after confirmation.
+5. **Settings** shows readiness, privacy/operator state, provider and gallery totals.
+   It also provides operator locking and a safe demo reset that clears unfinished
+   enrollment and local attendance without deleting enrolled identities.
+
+Changing screens stops the active camera and clears the displayed verification result.
+Only one camera loop and one initialized model runtime are used by the application.
+Use `Ctrl+1` through `Ctrl+5` for navigation. `F11` enables a clean full-screen
+presentation view and `Esc` exits it.
+
+For an unattended or shared-machine demonstration, configure the optional Git-ignored
+operator credential:
+
+```bash
+.venv/bin/python scripts/configure_operator.py
+```
+
+The plaintext PIN is never stored; the private file contains a salted PBKDF2-SHA256
+digest and is written with mode `0600`. Without this private file, the application remains
+in clearly labelled supervised operator mode.
+
 Optional human-readable names are loaded only from the Git-ignored local file
 `configs/private/identity_labels.yaml`. They affect the desktop banner only. Gallery
 matching, structured events and reports continue to use the canonical pseudonymous ID.
 
 Press **Stop** or close the window to clear the displayed identity, stop both worker
-threads and release the camera. The app does not provide recording, screenshot,
+threads and release the camera. The app does not provide camera recording, screenshots,
 single-image verification, threshold editing or model-training controls.
 
 ## 4. Legacy CLI camera interface
@@ -92,7 +128,7 @@ Presentation:
   collected and aggregated by median.
 - `UNKNOWN` is a valid fail-closed outcome, not a crash. It means PAD passed but the
   gallery did not accept the face. Do not tune thresholds to force a match.
-- `LIVENESS NOT CONFIRMED` means the PAD median did not pass. This may be an attack or
+- `POSSIBLE SPOOF / REJECTED` means the PAD median did not pass. This may be an attack or
   model uncertainty; identity matching is not run.
 - Keep other people and phones/printed photos out of the frame for the single-user
   demonstration. Any second face produces `MULTIPLE FACES`.
@@ -101,11 +137,11 @@ Presentation:
 
 | Overlay | Operator action |
 |---|---|
-| `NO FACE` | Present one face to the camera. |
+| `LOOKING FOR FACE` | Present one face to the camera. |
 | `MULTIPLE FACES` | Numbered boxes point to every detected face; identities remain unchecked until only one face is visible. |
-| `HOLD STILL` | Steady the face, improve lighting, move closer, avoid motion blur. |
+| `MOVE CLOSER` / `IMPROVE LIGHTING` / `HOLD STILL` | Follow the specific quality correction without changing thresholds. |
 | `CHECKING LIVENESS` | Hold still; evidence is being collected. |
-| `LIVENESS NOT CONFIRMED` | Face the camera, improve lighting and retry; do not lower the threshold to force acceptance. |
+| `POSSIBLE SPOOF / REJECTED` | Liveness did not pass. This can be an attack or model uncertainty; do not lower the threshold. |
 | `UNKNOWN` | Record the fail-closed result; do not claim recognition. |
 | `VERIFIED: <ID>` | PAD passed and the pseudonymous label was accepted. |
 
@@ -141,7 +177,24 @@ recognition stages are exercised; an empty scene measures capture and detection 
 The existing receipt in `reports/benchmarks/prototype_camera.json` was captured on a
 scene with no face and therefore reports only `no_face` retries.
 
-## 8. Troubleshooting
+## 8. Recording an authorized submission demo
+
+The application has no recording feature. If a submission requires video, use an
+operating-system screen recorder only after all visible participants have explicitly
+authorized that recording and its intended audience.
+
+1. Use a non-sensitive local display alias and hide unrelated notifications/windows.
+2. Record only the minimum verification/enrollment flow needed for review.
+3. Do not display private files, model weights, embeddings, credentials, or another
+   person's attendance history.
+4. Keep the recording outside Git and public issue trackers. Copy it only to the
+   authorized submission location.
+5. Delete the local recording after the approved review and retention period.
+
+Recording is external to FaceGuard; the application's no-frame-retention promise does
+not apply to the screen recorder's output.
+
+## 9. Troubleshooting
 
 | Symptom | Check |
 |---|---|

@@ -2,10 +2,10 @@
 
 The final prototype documentation is public-safe and contains no biometric data:
 
-- [ARCHITECTURE.md](ARCHITECTURE.md) — camera-to-decision flow, gates, states and
-  runtime configuration.
-- [DEMO_RUNBOOK.md](DEMO_RUNBOOK.md) — setup, readiness check, live camera operation,
-  shutdown and troubleshooting.
+- [ARCHITECTURE.md](ARCHITECTURE.md) — unified UI, gallery/history storage,
+  camera-to-decision flow, gates, states and runtime configuration.
+- [DEMO_RUNBOOK.md](DEMO_RUNBOOK.md) — setup, all application screens, supervised
+  operation, authorized demo recording, shutdown and troubleshooting.
 - [PROTOTYPE_MODEL_CARD.md](PROTOTYPE_MODEL_CARD.md) — models, pinned hashes, data
   scope, metrics, license and mandatory limitations.
 - [PRIVACY.md](PRIVACY.md) — local-only processing, zero retention, restricted paths

@@ -1,6 +1,6 @@
 # FaceGuard AI v2 — Implementation Status
 
-**Last updated:** 26 October 2026, 00:14 IST
+**Last updated:** 26 October 2026, 08:52 IST
 **Blueprint:** v1.1
 **Canonical tracker:** [`progress.yaml`](progress.yaml)
 **Active phase:** P4 — live runtime, queueing, and target-hardware performance
@@ -48,11 +48,15 @@ This percentage measures verified implementation tasks, not effort, elapsed time
 25. A centralized single-window desktop application performs automatic readiness checks, live in-memory preview, complete fail-closed analysis and aggregate diagnostics through shared bootstrap/session services (`scripts/run_app.py`, `src/faceguard/ui/`, `tests/unit/test_session.py`).
 26. Minimal CPU runtime container image built (`faceguard-runtime:prototype`, image ID `75046ef8bef4`) and headless readiness check verified on local Docker daemon (`deployment/run_container.sh smoke`, `reports/phase_receipts/container_smoke.json`).
 27. Strict Git-ignored desktop display aliases preserve canonical gallery IDs and structured-event values while allowing authorized local operator labels (`src/faceguard/identity_labels.py`, `tests/unit/test_identity_labels.py`).
-28. Memory-only face-localized overlays label an accepted single face, point to every detected face in multi-face scenes without running identity matching, and present below-threshold PAD as `LIVENESS NOT CONFIRMED` rather than a confirmed-attack claim (`src/faceguard/presentation.py`, `src/faceguard/ui/live_view.py`, `tests/unit/test_presentation.py`).
+28. Memory-only face-localized overlays label an accepted single face, point to every detected face in multi-face scenes without running identity matching, and present below-threshold PAD as a possible-spoof rejection rather than a confirmed-attack claim (`src/faceguard/presentation.py`, `src/faceguard/ui/live_view.py`, `tests/unit/test_presentation.py`).
+29. FaceGuard AI `0.1.0` provides one navigable Tkinter application for verification/check-in, consent-based five-sample webcam enrollment, duplicate review, atomic gallery/hash update and rollback, searchable identity management, confirmed deletion with runtime reload, private deduplicated SQLite history, CSV export/reset, and read-only settings (`src/faceguard/ui/`, `src/faceguard/gallery_admin.py`, `src/faceguard/checkins.py`).
+30. The desktop presentation now removes internal release/model identifiers, uses one professional navigation shell, provides guided enrollment steps, scrollable/empty data views, toast feedback, keyboard and full-screen presentation controls, high-DPI scaling, safe demo reset, and optional salted PBKDF2 local operator locking for protected screens (`src/faceguard/ui/`, `src/faceguard/operator_auth.py`, `scripts/configure_operator.py`).
+31. Verified results now mark local attendance automatically once per identity per calendar day on a background worker; legacy history migrates safely, and the bright attendance register groups records by month/day with filtering, CSV export, and confirmed deletion (`src/faceguard/checkins.py`, `src/faceguard/ui/`, `tests/unit/test_checkins.py`).
+32. Verification is now a terminal operator flow: the accepted frame is frozen, attendance is queued, the camera is released, and the result remains visible without allowing a later track to replace it. The main screen no longer exposes console event JSON, machine diagnostics, decorative status symbols, or redundant controls (`src/faceguard/ui/app.py`, `src/faceguard/ui/live_view.py`, `scripts/run_app.py`, `tests/unit/test_run_app_cli.py`).
 
 Runtime implementation now includes a protected gallery, validation-only recognition
 threshold selector, hash-verified PAD ONNX loader, PAD-before-recognition state
-machine, bounded latest-frame queue, live camera auto-reconnect, centralized desktop interface, Docker container deployment, and strict configuration. All 127 automated
+machine, bounded latest-frame queue, live camera auto-reconnect, centralized desktop interface, Docker container deployment, and strict configuration. All 143 automated
 tests pass and all configured models load on the local CPU environment. These are
 phase receipts, not a production-release claim.
 
@@ -64,14 +68,17 @@ Aggregate benchmark evidence exists at `reports/benchmarks/prototype_camera.json
 public-safe documentation (including MLOps status) is in `docs/`. An opt-in
 `--metrics-ui` dashboard runs in an isolated process with a dark metrics layout and
 closes cleanly, and CI now runs `pip check`, the test suite and a tracked-artifact /
-credential scan. The release manifest, DVC/MLflow/container work and private-runner
-readiness checks remain open.
+credential scan. Release-manifest, DVC/MLflow, container, rollback and private-runner
+workflow scaffolding exists; human approval and an evidenced private-runner execution
+remain separate from the prototype code.
 
-The recommended operator entry point is now `scripts/run_app.py`. Its Tkinter/Pillow
+The recommended operator entry point is now `scripts/run_app.py`. Its bright Tkinter/Pillow
 interface keeps UI work on the main thread, camera capture and inference in bounded
 workers, and reuses the existing `VideoVerifier` without duplicating or bypassing
-biometric decisions. A camera-free real-window smoke test passed; no camera was opened
-during that verification.
+biometric decisions. The same camera/runtime is reused for quality-checked enrollment,
+while gallery and SQLite writes run on background workers. Verified identities are
+marked present at most once per local day and displayed by month/day. A camera-free
+real-window smoke test passed; no camera was opened during that verification.
 
 These items do not mean session semantics, splits, the complete runtime environment,
 recognition thresholds, target-camera PAD robustness, or release readiness are verified.

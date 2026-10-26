@@ -101,6 +101,15 @@ class VerificationResult:
         }
 
 
+@dataclass(frozen=True)
+class EnrollmentObservation:
+    """One quality-checked enrollment sample; never serialized or logged."""
+
+    embedding: np.ndarray | None
+    bbox_xyxy: tuple[float, float, float, float] | None
+    reason: str | None
+
+
 def bbox_iou(
     left: tuple[float, float, float, float],
     right: tuple[float, float, float, float],
@@ -230,6 +239,33 @@ class VideoVerifier:
         if blur < self.policy.min_blur_variance:
             return "face_too_blurry"
         return None
+
+    def enrollment_observation(self, frame_bgr: np.ndarray) -> EnrollmentObservation:
+        """Extract one enrollment vector using the frozen face and quality pipeline."""
+        if (
+            not isinstance(frame_bgr, np.ndarray)
+            or frame_bgr.dtype != np.uint8
+            or frame_bgr.ndim != 3
+            or frame_bgr.shape[2] != 3
+        ):
+            return EnrollmentObservation(None, None, "invalid_frame")
+        try:
+            rgb = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2RGB)
+            observation = self.analyzer.embed_rgb(rgb)
+        except Exception:
+            return EnrollmentObservation(None, None, "face_model_error")
+        if observation.error is not None:
+            return EnrollmentObservation(None, observation.bbox_xyxy, observation.error)
+        quality_reason = self._quality_reason(frame_bgr, observation)
+        if quality_reason is not None:
+            return EnrollmentObservation(None, observation.bbox_xyxy, quality_reason)
+        if observation.embedding is None:
+            return EnrollmentObservation(None, observation.bbox_xyxy, "embedding_missing")
+        return EnrollmentObservation(
+            np.ascontiguousarray(observation.embedding.copy(), dtype=np.float32),
+            observation.bbox_xyxy,
+            None,
+        )
 
     def process(self, frame_bgr: np.ndarray, timestamp_ms: float) -> VerificationResult:
         started = time.perf_counter()

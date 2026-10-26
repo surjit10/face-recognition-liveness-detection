@@ -26,12 +26,12 @@ def _result(status="retry", reason="no_face", person_id=None):
 @pytest.mark.parametrize(
     ("result", "message", "tone"),
     [
-        (_result(reason="no_face"), "NO FACE", "neutral"),
+        (_result(reason="no_face"), "LOOKING FOR FACE", "neutral"),
         (_result(reason="multiple_faces"), "MULTIPLE FACES", "neutral"),
         (_result(reason="collecting_pad_evidence"), "CHECKING LIVENESS", "neutral"),
         (
             _result(status="spoof", reason="pad_below_threshold"),
-            "LIVENESS NOT CONFIRMED",
+            "POSSIBLE SPOOF / REJECTED",
             "warning",
         ),
         (_result(status="unknown", reason="below_threshold"), "UNKNOWN", "warning"),
@@ -73,7 +73,7 @@ def test_verified_face_annotation_uses_private_display_label() -> None:
         identity_labels={"000": "Display Name"},
     )
     assert len(annotations) == 1
-    assert annotations[0].label == "VERIFIED · Display Name"
+    assert annotations[0].label == "VERIFIED: Display Name"
     assert annotations[0].tone == "success"
 
 
@@ -85,7 +85,7 @@ def test_multiple_faces_are_pointed_out_without_identity_matching() -> None:
     )
     annotations = face_annotations(result, identity_labels={"000": "Display Name"})
     assert [item.label for item in annotations] == [
-        "FACE 1 · IDENTITY NOT CHECKED",
-        "FACE 2 · IDENTITY NOT CHECKED",
+        "FACE 1: IDENTITY NOT CHECKED",
+        "FACE 2: IDENTITY NOT CHECKED",
     ]
     assert all(item.tone == "danger" for item in annotations)

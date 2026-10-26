@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Fail when tracked files contain restricted artifacts or credential-shaped text."""
+"""Fail when publishable tracked or untracked files contain restricted material."""
 
 from __future__ import annotations
 
@@ -88,6 +88,7 @@ def main() -> int:
     try:
         paths = _git(args.root, "ls-files", "-z")
         paths += _git(args.root, "diff", "--cached", "--name-only", "-z")
+        paths += _git(args.root, "ls-files", "--others", "--exclude-standard", "-z")
     except (OSError, subprocess.CalledProcessError) as exc:
         print(f"artifact scan blocked: {exc}", file=sys.stderr)
         return 2
@@ -97,7 +98,7 @@ def main() -> int:
     if findings:
         print(f"artifact scan failed: {len(findings)} finding(s)", file=sys.stderr)
         return 1
-    print(f"artifact scan passed: {len(set(paths))} tracked/staged path(s) reviewed")
+    print(f"artifact scan passed: {len(set(paths))} publishable path(s) reviewed")
     return 0
 
 

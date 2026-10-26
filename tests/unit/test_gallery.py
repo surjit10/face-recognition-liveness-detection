@@ -61,6 +61,10 @@ def test_gallery_tie_is_unknown() -> None:
 
 def test_gallery_save_load_enroll_and_remove(tmp_path: Path) -> None:
     gallery = _gallery()
+    assert gallery.identity_ids == ("person-a", "person-b")
+    assert gallery.vector_count("person-a") == 2
+    assert gallery.source_hash_count("person-a") == 2
+    assert gallery.vector_count("missing") == 0
     gallery.enroll(
         "person-c",
         np.asarray([[0.7, -0.7]]),

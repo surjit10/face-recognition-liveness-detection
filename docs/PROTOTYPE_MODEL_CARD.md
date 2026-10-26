@@ -3,6 +3,7 @@
 | Field | Value |
 |---|---|
 | System | FaceGuard AI v2 (`faceguard-v2-development`) |
+| Application | Unified local academic prototype `0.1.0` |
 | Release status | Academic demonstration prototype; not production-ready |
 | Runtime | Python 3.12.3, ONNX Runtime 1.31.0, `CPUExecutionProvider` |
 | Recognition | InsightFace `buffalo_m`: SCRFD 2.5G detector + ResNet-50 ArcFace recognizer |

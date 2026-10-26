@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "faceguard-ai"
-version = "0.0.0"
-description = "Phase-gated face recognition and presentation-attack detection project"
+version = "0.1.0"
+description = "Local academic face recognition and presentation-attack prototype"
 requires-python = ">=3.10"
 
 [tool.setuptools.packages.find]

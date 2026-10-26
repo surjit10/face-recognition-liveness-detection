@@ -21,6 +21,55 @@ flowchart LR
     C -->|fails gate| L[HOLD STILL / retry]
 ```
 
+## Application architecture
+
+```mermaid
+flowchart TB
+    UI[Tkinter unified application] --> NAV{Screen}
+    NAV --> VERIFY[Verify & attendance]
+    NAV --> ENROLL[Guided enrollment]
+    NAV --> USERS[Enrolled users]
+    NAV --> HISTORY[Attendance register]
+    NAV --> SETTINGS[Read-only settings]
+
+    VERIFY --> SESSION[One bounded VerificationSession]
+    ENROLL --> SESSION
+    SESSION --> RUNTIME[Shared SCRFD + ArcFace + PAD ONNX sessions]
+    RUNTIME --> GALLERY[Protected in-memory Gallery]
+
+    ENROLL --> ADMIN[Shared gallery administration]
+    USERS --> ADMIN
+    ADMIN --> PRIVATE[(gallery.npz + private metadata)]
+    ADMIN --> PIN[Update pinned gallery hash]
+
+    VERIFY --> EVENTS[Automatic verified attendance]
+    EVENTS --> SQLITE[(Private SQLite history)]
+    HISTORY --> SQLITE
+```
+
+There is one camera owner and one set of initialized ONNX sessions. Enrollment sample
+extraction is serialized through the same verifier lock and reuses the detector,
+alignment, ArcFace model, and quality gates. It does not create another capture loop.
+Navigation stops the active session and clears the newest frame and accepted identity.
+
+Gallery enrollment and deletion use the same administration module as
+`scripts/manage_gallery.py`. A mutation atomically saves the gallery and private
+metadata, updates the pinned gallery SHA-256 in `configs/runtime.yaml`, verifies the
+result, and rolls all touched files back if any step fails. The gallery schema and
+recognition/PAD thresholds are unchanged.
+
+Attendance writes run on a UI background worker, not the capture/inference path. SQLite
+stores only a canonical identity reference, UTC timestamp, local calendar date, event
+type, verified outcome, application version, and model version. A verified identity is
+marked at most once per local calendar day. Unknown or PAD-rejected results have no
+recording action. After acceptance, the UI freezes the accepted frame and releases the
+camera while the attendance write completes.
+
+An optional Git-ignored operator configuration stores only a salted PBKDF2-SHA256 PIN digest.
+When configured, protected navigation requires local session unlock; the operator can
+relock without closing the application. This is a demonstration access gate, not a
+replacement for operating-system account security.
+
 Identity matching is never executed until PAD evidence has passed. The recognition
 stage receives an embedding that was already computed for the same single detected
 face, so it cannot produce an identity on a frame that PAD rejected.
@@ -42,11 +91,11 @@ face, so it cannot produce an identity on a frame that PAD rejected.
 
 | Overlay | Pipeline state/status | Meaning |
 |---|---|---|
-| `NO FACE` | `RETRY` / `retry` | No single face is available; no identity is possible. |
+| `LOOKING FOR FACE` | `RETRY` / `retry` | No single face is available; no identity is possible. |
 | `MULTIPLE FACES` | `RETRY` / `retry` | More than one face is visible; each detected face is boxed for operator guidance, but identities are not checked. |
-| `HOLD STILL` | `RETRY` / `retry` | Quality, continuity, timing or model check failed; present one steady, well-lit face. |
+| `MOVE CLOSER` / `IMPROVE LIGHTING` / `HOLD STILL` | `RETRY` / `retry` | The existing size, exposure or focus quality gate requested a correction. |
 | `CHECKING LIVENESS` | `COLLECTING_PAD` | PAD observations are being collected; identity matching has not run. |
-| `LIVENESS NOT CONFIRMED` | `PAD_FAILED` / `spoof` | Median liveness is below threshold. The UI avoids claiming a confirmed attack; recognition is never called. |
+| `POSSIBLE SPOOF / REJECTED` | `PAD_FAILED` / `spoof` | Median liveness is below threshold. This is a rejection, not a claim that an attack was proven; recognition is never called. |
 | `UNKNOWN` | `UNKNOWN` / `unknown` | PAD passed but the gallery score or margin did not accept an identity. This is a valid fail-closed result. |
 | `VERIFIED: <ID>` | `IDENTIFIED` / `verified` | PAD passed and the gallery accepted the pseudonymous enrollment label. |
 
@@ -81,7 +130,8 @@ history.
 The desktop app automatically checks model/gallery hashes and providers before it
 enables **Start camera**. It never opens the camera on application launch, and it does
 not expose controls that bypass PAD, change thresholds, train models, record frames or
-perform single-image liveness decisions.
+perform single-image liveness decisions. Its five screens are verification/attendance,
+guided enrollment, enrolled-user management, attendance register, and read-only settings.
 
 Face boxes are presentation-only data attached to an in-memory result and are never
 included in `VerificationResult.event()`. A single verified face receives its accepted
@@ -102,9 +152,11 @@ comparison (`matrix @ query`) with a per-person maximum.
 
 ## Privacy boundary
 
-Frames and crops exist only in memory for the duration of one inference step. The
-application writes no video, frames, crops or embeddings; reports contain aggregate
-values only. See [PRIVACY.md](PRIVACY.md).
+Frames and crops exist only in memory. Verification query embeddings are discarded;
+confirmed enrollment vectors are saved only to the protected private gallery. The
+application records no camera image or video. Local attendance history contains event
+metadata but no pixels, embeddings, scores, or bounding boxes. See
+[PRIVACY.md](PRIVACY.md).
 
 ## Limitations
 

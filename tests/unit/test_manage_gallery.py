@@ -6,6 +6,7 @@ import numpy as np
 import pytest
 
 from faceguard.gallery import Gallery, GalleryError
+from faceguard.gallery_admin import duplicate_candidates, enroll_identity
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 SPEC = importlib.util.spec_from_file_location(
@@ -128,3 +129,85 @@ def test_delete_leaving_less_than_two_identities_is_blocked(sample_gallery_bundl
     # Attempting to delete user_b should leave only user_c, which is <2
     with pytest.raises(GalleryError, match="must retain at least two identities"):
         MG.delete_identity(gallery_path, "user_b", dry_run=False, confirmed=True)
+
+
+def test_enrollment_updates_gallery_metadata_and_pinned_config(sample_gallery_bundle):
+    gallery_path, _ = sample_gallery_bundle
+    old_hash = MG.verify_gallery(gallery_path)["gallery_sha256"]
+    config_path = gallery_path.parent / "runtime.yaml"
+    config_path.write_text(
+        f"schema_version: 1\nface:\n  gallery_sha256: {old_hash}\n",
+        encoding="utf-8",
+    )
+
+    result = enroll_identity(
+        gallery_path,
+        "user-d",
+        np.asarray([[0.5, 0.5, 0.7]], dtype=np.float32),
+        consent_recorded=True,
+        duplicate_candidates_reviewed=True,
+        runtime_config_path=config_path,
+    )
+
+    assert result["status"] == "enrolled"
+    assert result["raw_images_retained"] is False
+    assert result["new_gallery_sha256"] in config_path.read_text(encoding="utf-8")
+    inspected = MG.inspect_identity(gallery_path, "user-d")
+    assert inspected["consent_recorded"] is True
+    assert inspected["capture_method"] == "authorized_webcam"
+
+
+def test_enrollment_requires_consent_and_duplicate_review(sample_gallery_bundle):
+    gallery_path, _ = sample_gallery_bundle
+    vector = np.asarray([[1.0, 0.0, 0.0]], dtype=np.float32)
+    with pytest.raises(GalleryError, match="consent"):
+        enroll_identity(
+            gallery_path,
+            "user-d",
+            vector,
+            consent_recorded=False,
+            duplicate_candidates_reviewed=True,
+        )
+    with pytest.raises(GalleryError, match="review"):
+        enroll_identity(
+            gallery_path,
+            "user-d",
+            vector,
+            consent_recorded=True,
+            duplicate_candidates_reviewed=False,
+            duplicate_identity_ids=("user_a",),
+        )
+
+
+def test_duplicate_candidates_reuse_frozen_gallery_decision(sample_gallery_bundle):
+    gallery_path, _ = sample_gallery_bundle
+    gallery, _ = MG.load_gallery_unverified(gallery_path)
+    candidates = duplicate_candidates(
+        gallery,
+        np.asarray([[1.0, 0.0, 0.0]], dtype=np.float32),
+        threshold=0.8,
+        min_margin=0.0,
+    )
+    assert candidates == ("user_a",)
+
+
+def test_config_mismatch_rolls_back_gallery_mutation(sample_gallery_bundle):
+    gallery_path, _ = sample_gallery_bundle
+    original = gallery_path.read_bytes()
+    config_path = gallery_path.parent / "runtime.yaml"
+    config_path.write_text(
+        f"schema_version: 1\nface:\n  gallery_sha256: {'f' * 64}\n",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(GalleryError, match="does not pin"):
+        enroll_identity(
+            gallery_path,
+            "user-d",
+            np.asarray([[0.5, 0.5, 0.7]], dtype=np.float32),
+            consent_recorded=True,
+            duplicate_candidates_reviewed=True,
+            runtime_config_path=config_path,
+        )
+
+    assert gallery_path.read_bytes() == original

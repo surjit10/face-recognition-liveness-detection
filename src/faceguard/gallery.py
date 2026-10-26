@@ -104,6 +104,23 @@ class Gallery:
     def identity_count(self) -> int:
         return len(self._identities)
 
+    @property
+    def identity_ids(self) -> tuple[str, ...]:
+        """Return enrolled identity references without exposing gallery vectors."""
+        return tuple(str(value) for value in self._identities.tolist())
+
+    def vector_count(self, person_id: str) -> int:
+        """Return the number of enrollment vectors for one identity."""
+        rows = self._row_indices.get(person_id)
+        return 0 if rows is None else int(len(rows))
+
+    def source_hash_count(self, person_id: str) -> int:
+        """Return non-empty source references without exposing their values."""
+        rows = self._row_indices.get(person_id)
+        if rows is None:
+            return 0
+        return sum(bool(self._source_sha256[index]) for index in rows)
+
     def search(
         self,
         embedding: np.ndarray,

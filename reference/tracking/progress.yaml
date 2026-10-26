@@ -1,7 +1,7 @@
 schema_version: 1
 project_id: faceguard-ai-v2
 blueprint_version: "1.1"
-last_updated: "2026-10-26T00:14:00+05:30"
+last_updated: "2026-10-26T08:52:00+05:30"
 source_of_truth: reference/FaceGuard_AI_Implementation_Blueprint.md
 status_values:
   - NOT_STARTED
@@ -523,8 +523,14 @@ phases:
         title: Pass gallery access, deletion, cache-clear, and retention tests
         status: COMPLETE
         evidence:
+          - src/faceguard/gallery_admin.py
+          - src/faceguard/checkins.py
+          - src/faceguard/operator_auth.py
           - scripts/manage_gallery.py
+          - scripts/configure_operator.py
           - tests/unit/test_manage_gallery.py
+          - tests/unit/test_checkins.py
+          - tests/unit/test_operator_auth.py
         blocked_by: []
       - id: P5-07
         title: Pass public-artifact scan for biometric data, secrets, and restricted weights
@@ -565,6 +571,53 @@ phases:
         blocked_by: []
 
 change_log:
+  - timestamp: "2026-10-26T09:40:00+05:30"
+    actor: antigravity
+    change: "Implemented attendance_admin and operator role separation with salted PBKDF2 credential verification in operator_auth and configure_operator. Desktop GUI dynamically restricts navigation for attendance admins to verification and attendance register while hiding enrollment, user management, and settings. Added active Stop control and automatic 4-second reset after attendance recording to prevent screen freezing. Verification: 154 automated tests, pip check, 200-path artifact scan, and camera-free unit tests passing."
+    affected_tasks:
+      - P4-03
+      - P4-04
+      - P5-06
+      - P5-07
+      - P5-08
+  - timestamp: "2026-10-26T08:52:00+05:30"
+    actor: codex
+    change: "Simplified the operator verification flow in response to the observed post-verification continuation. The first accepted identity now freezes the verified frame, queues its once-per-day attendance write, disables further interaction, and stops/releases the camera so a later track cannot replace the accepted result. The final screen clearly reports ATTENDANCE MARKED, ALREADY MARKED, or ATTENDANCE NOT SAVED. Removed desktop JSON event output, internal session diagnostics, decorative tick/dot navigation symbols, redundant runtime/privacy badges, the unused system-check control, and the attendance toggle; added clean SIGINT window shutdown and suppressed the known third-party face-alignment deprecation warning only in the desktop launcher. Verification: 143 automated tests, pip check, 200-path artifact scan, diff checks, camera-free five-screen Tk smoke, and visual layout inspection passed. No completion counts changed; the supplied camera log motivated the fix but target-camera acceptance is still not claimed."
+    affected_tasks:
+      - P4-03
+      - P4-04
+      - P5-07
+      - P5-08
+  - timestamp: "2026-10-26T08:43:00+05:30"
+    actor: codex
+    change: "Completed the supervised attendance UX requested for the academic prototype without altering model weights, thresholds, preprocessing, alignment, or PAD-before-recognition behavior. A successful verified result now queues one background SQLite attendance write per identity per local calendar day; unknown and liveness-rejected results cannot mark attendance, and the operator can pause automatic marking for the session. The bright professional interface labels the flow clearly and the attendance register groups records by month and day with a month filter, CSV export, and confirmed deletion. Existing schema-v1 history is migrated in place with a local-date field. Verification: 142 automated tests, pip check, 200-path publishable-artifact scan, diff checks, camera-free five-screen Tk smoke, and visual inspection of the verification and attendance screens passed. No completion counts changed; real-camera attendance validation and security evaluation remain deferred."
+    affected_tasks:
+      - P4-03
+      - P4-04
+      - P5-07
+      - P5-08
+  - timestamp: "2026-10-26T08:33:00+05:30"
+    actor: codex
+    change: "Completed a modern Tkinter presentation pass without altering biometric behavior: removed visible release/model version identifiers and duplicate branding; added professional navigation, status treatment, guided enrollment steps and metadata summary, scrollable tables, empty states, toast notifications, keyboard navigation, full-screen presentation mode, high-DPI scaling, and a safe demo-session reset. Added optional local operator locking for protected screens using a Git-ignored salted PBKDF2-SHA256 credential configured through a non-echoed CLI. Verification: pip check, 140 automated tests, 200-path publishable-artifact scan, syntax/diff checks, and a camera-free real-window smoke across all screens and presentation mode passed. No completion counts changed; real-camera acceptance remains deferred."
+    affected_tasks:
+      - P4-03
+      - P4-04
+      - P5-06
+      - P5-07
+      - P5-08
+  - timestamp: "2026-10-26T08:17:00+05:30"
+    actor: codex
+    change: "Completed FaceGuard AI 0.1.0 product-prototype UX without changing frozen models, thresholds, preprocessing, alignment, or PAD-before-recognition behavior. The unified Tkinter application now provides verification/check-in, guided consent-based webcam enrollment using the existing serialized analyzer and quality gates, shared atomic gallery administration with pinned-hash update/rollback, searchable user inspection and confirmed deletion, private deduplicated SQLite check-in history with CSV export/reset, and read-only settings. Documentation now covers all screens, private artifacts, architecture, authorized demo recording, and limitations. Verification: pip check, 136 automated tests, tracked-artifact scan, and a camera-free real-window smoke passed. No task completion counts changed; real-camera acceptance and model evaluation remain deferred."
+    affected_tasks:
+      - P3-04
+      - P3-07
+      - P3-08
+      - P4-03
+      - P4-04
+      - P5-05
+      - P5-06
+      - P5-07
+      - P5-08
   - timestamp: "2026-10-26T00:14:00+05:30"
     actor: codex
     change: "Improved fail-closed presentation semantics and face-localized overlays. A below-threshold PAD result now displays LIVENESS NOT CONFIRMED instead of claiming a confirmed spoof. Valid detector boxes are carried only in memory: a single accepted face receives its verified local label, while multi-face scenes receive numbered IDENTITY NOT CHECKED boxes and never invoke recognition. Structured events continue to exclude all boxes. Verification: 127 automated tests and pip check pass; a synthetic real-window multi-face overlay smoke test rendered successfully without camera access or biometric data. No completion counts changed."

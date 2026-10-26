@@ -53,49 +53,65 @@
       "pad_min_observations": 8
     }
   },
-  "created_at": "2026-10-25T17:32:37.033854+00:00",
+  "created_at": "2026-10-26T04:14:13.215392+00:00",
   "environment": {
     "python": "3.12.3",
     "runtime_lock_sha256": "2e03c24b6fbe909d03b1829c103da5c967bfcf948575123aae0c15ffb68891a3"
   },
   "git": {
     "clean": false,
-    "commit": "970073ef33fb566c907256617175ab27148d7f99",
+    "commit": "53a4bea71167bfd44b5123575590227509c0b8c8",
     "uncommitted_files": [
-      "M deployment/README.md",
-      "M dvc.lock",
-      "M reference/tracking/STATUS.md",
-      "M reference/tracking/progress.yaml",
-      "M reports/environments/runtime_readiness.json",
-      "M reports/phase_receipts/artifact_scan.txt",
-      "M scripts/run_demo.py",
-      "M tests/unit/test_scan_artifacts.py",
-      "?? .github/workflows/ci_private.yml",
-      "?? deployment/docker-compose.yml",
-      "?? deployment/run_container.sh",
-      "?? scripts/generate_release_manifest.py",
-      "?? scripts/manage_gallery.py",
-      "?? scripts/manage_release.py",
-      "?? scripts/promote_release.py",
-      "?? scripts/verify_private_models.py",
-      "?? tests/unit/test_camera_reconnect.py",
-      "?? tests/unit/test_container_deployment.py",
-      "?? tests/unit/test_manage_gallery.py",
-      "?? tests/unit/test_manage_release.py",
-      "?? tests/unit/test_promote_release.py",
-      "?? tests/unit/test_release_manifest.py",
-      "?? tests/unit/test_verify_private_models.py"
+      "M  .gitignore",
+      "M  README.md",
+      "M  docs/ARCHITECTURE.md",
+      "M  docs/DEMO_RUNBOOK.md",
+      "M  docs/MLOPS.md",
+      "M  docs/PRIVACY.md",
+      "M  docs/PROTOTYPE_MODEL_CARD.md",
+      "M  docs/README.md",
+      "M  pyproject.toml",
+      "M  reference/tracking/STATUS.md",
+      "M  reference/tracking/progress.yaml",
+      "M  reports/environments/runtime_readiness.json",
+      "M  reports/phase_receipts/artifact_scan.txt",
+      "M  reports/release_manifest.json",
+      "M  scripts/README.md",
+      "A  scripts/configure_operator.py",
+      "M  scripts/manage_gallery.py",
+      "M  scripts/run_app.py",
+      "M  scripts/scan_artifacts.py",
+      "M  src/faceguard/__init__.py",
+      "A  src/faceguard/checkins.py",
+      "M  src/faceguard/gallery.py",
+      "A  src/faceguard/gallery_admin.py",
+      "A  src/faceguard/operator_auth.py",
+      "M  src/faceguard/pipeline.py",
+      "M  src/faceguard/presentation.py",
+      "M  src/faceguard/session.py",
+      "M  src/faceguard/ui/app.py",
+      "M  src/faceguard/ui/live_view.py",
+      "A  src/faceguard/ui/pages.py",
+      "M  src/faceguard/ui/theme.py",
+      "A  tests/unit/test_checkins.py",
+      "M  tests/unit/test_gallery.py",
+      "M  tests/unit/test_manage_gallery.py",
+      "A  tests/unit/test_operator_auth.py",
+      "M  tests/unit/test_pipeline.py",
+      "M  tests/unit/test_presentation.py",
+      "M  tests/unit/test_run_app_cli.py",
+      "M  tests/unit/test_run_demo_overlay.py"
     ]
   },
   "release_id": "faceguard-v2-development",
   "reports": {
     "prototype_camera_benchmark": {
       "relative_path": "reports/benchmarks/prototype_camera.json",
-      "sha256": "897026fe5eeafced49d918ec70afcab1b2f53b7d13f3a453743a98a4119a27e1"
+      "sha256": "6b43e6f040f7846d2756be69f81b50ed834a2c19b761c4de595b8c4c2b081335"
     },
     "readiness": {
       "relative_path": "reports/environments/runtime_readiness.json",
-      "sha256": "014308eef73764eaebaabc819379b73f8c4ab065887b1c49a020d0f1b1934e8c"
+      "sha256": "bfc461176c2c6d1769a91358aa97c92baf25b02db57e6d1ab07427a0712af0a9"
     },
     "recognition_test": {
       "relative_path": "reports/evaluation/recognition_test.json",

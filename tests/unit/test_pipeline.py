@@ -200,3 +200,38 @@ def test_multiple_face_boxes_are_available_only_for_in_memory_display() -> None:
     event = result.event()
     assert "face_boxes_xyxy" not in event
     assert "bbox" not in event
+
+
+def test_enrollment_observation_reuses_face_quality_without_pad_or_gallery() -> None:
+    gallery = _Gallery()
+    pad = _Pad([0.9])
+    verifier = VideoVerifier(
+        analyzer=_Analyzer([_observation()]),
+        pad_model=pad,
+        gallery=gallery,  # type: ignore[arg-type]
+        policy=_policy(),
+        model_version="test",
+    )
+
+    observation = verifier.enrollment_observation(_frame())
+
+    assert observation.reason is None
+    assert observation.embedding is not None
+    assert observation.bbox_xyxy == (20.0, 20.0, 80.0, 80.0)
+    assert pad.calls == 0
+    assert gallery.calls == 0
+
+
+def test_enrollment_observation_reports_existing_quality_reason() -> None:
+    verifier = VideoVerifier(
+        analyzer=_Analyzer([_observation("no_face")]),
+        pad_model=_Pad([0.9]),
+        gallery=_Gallery(),  # type: ignore[arg-type]
+        policy=_policy(),
+        model_version="test",
+    )
+
+    observation = verifier.enrollment_observation(_frame())
+
+    assert observation.embedding is None
+    assert observation.reason == "no_face"

@@ -1,6 +1,6 @@
 {
   "camera_opened": false,
-  "created_at": "2026-10-25T18:45:24.119799+00:00",
+  "created_at": "2026-10-26T02:50:09.199040+00:00",
   "event": "runtime_ready",
   "face_pack": "buffalo_m",
   "face_runtime_providers": {
@@ -19,6 +19,7 @@
   ],
   "release_id": "faceguard-v2-development",
   "schema_version": 1,
+  "synthetic_test_status": "retry",
   "verified_face_model_hashes": {
     "det_2.5g.onnx": "041f73f47371333d1d17a6fee6c8ab4e6aecabefe398ff32cca4e2d5eaee0af9",
     "w600k_r50.onnx": "4c06341c33c2ca1f86781dab0e829f88ad5b64be9fba56e56bc9ebdefc619e43"
