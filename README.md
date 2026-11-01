@@ -9,31 +9,27 @@ FaceGuard AI is a real-time computer vision system combining presentation attack
 Python 3.12 and a graphical Linux desktop are the verified local environment.
 
 ```bash
+# 1. Set up Python virtual environment
 python3 -m venv .venv
 .venv/bin/python -m pip install --upgrade pip
 .venv/bin/python -m pip install -r requirements-runtime.lock
-.venv/bin/python -m pip check
-```
 
-Install the authorized private artifacts at these exact Git-ignored paths:
+# 2. Download pre-trained models (164 MB)
+curl -L -O https://github.com/surjit10/face-recognition-liveness-detection/releases/download/v0.1.0/faceguard-models.zip
+unzip faceguard-models.zip
 
-| Artifact | Required path |
-|---|---|
-| SCRFD detector | `models/private/insightface/models/buffalo_m/det_2.5g.onnx` |
-| ArcFace recognizer | `models/private/insightface/models/buffalo_m/w600k_r50.onnx` |
-| PAD candidate | `models/private/pad_candidate/mobilenetv3_pad.onnx` |
-| Protected gallery | `models/private/gallery/gallery.npz` |
-
-The official `buffalo_m` archive can be installed with the permission-gated command in
-[`docs/DEMO_RUNBOOK.md`](docs/DEMO_RUNBOOK.md). The runtime never downloads or
-substitutes model files, and startup refuses files whose hashes differ from
-[`configs/runtime.yaml`](configs/runtime.yaml).
-
-Launch the complete application with one command:
-
-```bash
+# 3. Launch the desktop application
 .venv/bin/python scripts/run_app.py
 ```
+
+The pre-trained model package contains:
+| Model Component | Architecture / Purpose | Location |
+|---|---|---|
+| **Face Detector** | SCRFD 2.5G (`det_2.5g.onnx`, 3.3 MB) | `models/private/insightface/models/buffalo_m/` |
+| **Face Recognizer** | ArcFace ResNet-50 (`w600k_r50.onnx`, 174 MB) | `models/private/insightface/models/buffalo_m/` |
+| **Anti-Spoofing (PAD)** | MobileNetV3 (`mobilenetv3_pad.onnx`, 6.1 MB) | `models/private/pad_candidate/` |
+| **Identity Gallery** | 512-d unit vectors (`gallery.npz`, 2.8 MB) | `models/private/gallery/` |
+
 
 The application performs a camera-free integrity check before enabling camera access.
 Camera `0` is opened only after an operator chooses to start verification or enrollment.
