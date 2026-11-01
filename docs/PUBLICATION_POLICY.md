@@ -43,8 +43,7 @@ Record only consenting participants, keep recordings outside Git, share them onl
 the intended academic reviewer, and delete them after the approved retention period.
 The application's no-frame-retention guarantee does not apply to an external recorder.
 
-## Approval scope
+## Policy Scope
 
-The user approved this policy on 1 November 2026 for the current local academic
-prototype. Any commercial deployment, public release of private artifacts, new dataset,
-new recipient, or materially different purpose requires a new rights and privacy review.
+This policy governs the data privacy and security guidelines for the FaceGuard AI codebase and artifacts. Any commercial deployment, public release of private artifacts, new dataset integration, or external sharing requires prior review against data privacy and licensing regulations.
+
