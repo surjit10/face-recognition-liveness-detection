@@ -10,15 +10,15 @@ The final prototype documentation is public-safe and contains no biometric data:
   scope, metrics, license and mandatory limitations.
 - [PRIVACY.md](PRIVACY.md) — local-only processing, zero retention, restricted paths
   and logging rules.
+- [PUBLICATION_POLICY.md](PUBLICATION_POLICY.md) — approved academic submission scope
+  and material that must remain private.
 - [EVALUATION.md](EVALUATION.md) — exploratory split, threshold selection, test results,
   benchmark summary and deferred acceptance cases.
 - [MLOPS.md](MLOPS.md) — implemented CI/artifact checks and the remaining release and
   experiment-tracking gaps.
+- [SUBMISSION_GUIDE.md](SUBMISSION_GUIDE.md) — current repository map, public/private
+  boundaries, safe ZIP creation and before/after version comparison.
 
-Development runbooks for embedding extraction, PAD training and the runtime pipeline
-remain in [EMBEDDING_EXTRACTION.md](EMBEDDING_EXTRACTION.md),
-[KAGGLE_EMBEDDING_RUNBOOK.md](KAGGLE_EMBEDDING_RUNBOOK.md) and
-[RUNTIME_PIPELINE.md](RUNTIME_PIPELINE.md).
-
-Planning and progress material remains isolated in the removable `reference/`
-directory.
+Completed research, training and data-preparation runbooks are archived under
+`reference/archive/final-submission-excluded/`. They are not required to operate,
+evaluate or submit the frozen academic prototype.

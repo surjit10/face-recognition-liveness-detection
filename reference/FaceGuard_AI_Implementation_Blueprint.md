@@ -1,5 +1,5 @@
 # FaceGuard AI v2 — Implementation Contract
-**Version:** 1.1 | **Date:** 24 October 2026 | **Purpose:** A single, defensible Computer Vision + MLOps portfolio project for CloudPhysician-style CV Engineer interviews.
+**Version:** 1.2 | **Date:** 1 November 2026 | **Purpose:** A single, defensible Computer Vision + MLOps portfolio project for CloudPhysician-style CV Engineer interviews.
 
 > **Status:** Architecture and execution specification. It is NOT a claim that code has been built, datasets obtained, accuracy measured, or package combinations tested on your Kaggle image. Numbers marked *starting point* must be validated. Do not fabricate experimental results.
 
@@ -71,13 +71,38 @@ At minimum track: `FRAD_PERMISSION`, `FRAD_COHORT`, `FRAD_LABEL_MEANING`, `FRAD_
 7. **No unsupported anti-spoof claims:** RGB PAD + multi-frame score smoothing is not a defense guarantee against masks, deepfakes, video injection or adaptive replay; document test scope.
 8. **Keep code minimal:** start with OpenCV, InsightFace `FaceAnalysis` (tested version) for detection+recognition, PyTorch/torchvision for PAD training, ONNX Runtime for exported PAD, NumPy for similarity, a simple tracker, SQLite or encrypted file gallery, MLflow + DVC + Docker/CI. No Kafka, Kubernetes, Redis, vector database, distributed workers, custom CUDA, or multiple dashboards.
 
+### 0E. Academic-prototype PAD evidence amendment (1 November 2026)
+
+The user explicitly removed reproduction of the third-party online PAD training run
+from the final academic-prototype requirements. The frozen MobileNetV3 PAD artifact is
+accepted only as an externally trained development baseline using the evidence that is
+already available: the executed Kaggle notebook, downloaded artifact/config/metric
+hashes, local ONNX verification, target-camera rejection test and mandatory limitation
+reporting.
+
+This amendment means:
+
+- the project is not required to obtain or redistribute the online CelebA-Spoof mirror,
+  recover its private manifest CSVs, recover training history/scores, reconstruct its
+  package lock, or rerun training;
+- P2 training-reproducibility tasks remain visibly `BLOCKED` and receive no completion
+  credit; they are not silently converted into successful evidence;
+- the recorded threshold and metrics may be reported only as historical properties of
+  the frozen development artifact, not as independently reproducible or certified PAD
+  results;
+- the application remains eligible only for a supervised, non-commercial academic
+  demonstration under `PROTOTYPE_SCOPE`; production, commercial, certified-security or
+  dataset-redistribution claims remain prohibited;
+- reopening production or reproducible-research scope automatically reactivates every
+  missing P2 permission, manifest, environment, score, policy and parity gate.
+
 ## 1. Inputs from your existing v1 project
 
 **Available according to your September 2026 interview report:** a 233-subject FRAD face dataset with roughly 12 genuine images per identity and corresponding screen-recapture spoofs; MTCNN preprocessing; FaceNet embeddings + 233-class RBF-SVM; DenseNet121 RGB PAD; webcam/Tkinter and Raspberry Pi implementations. Original reported results: 90.27% *closed-set* recognition on the 233-subject configuration, and 95.5% PAD accuracy on a small, specific test of screen-recapture samples. These are *historical*, protocol-specific results, not guaranteed cross-domain or v2 results. The old evaluation scripts/report have known mismatches, so reproduce baselines before comparing.
 
 **Observed workspace audit on 24 October 2026 (structural facts only):**
 
-- Recognition root after repository organization: `data/processed/frad_legacy_crops/` (moved from `dataset/cropped_faces/` without changing file contents; 2,802-file content multiset SHA-256 `cf24a522c45d81014367897e6a198493d7ea9a7fefb87285becf06ec5aeb269c`).
+- Recognition root after repository organization: `reference/archive/final-submission-excluded/restricted-data/processed/frad_legacy_crops/` (moved from `dataset/cropped_faces/` without changing file contents; 2,802-file content multiset SHA-256 `cf24a522c45d81014367897e6a198493d7ea9a7fefb87285becf06ec5aeb269c`).
 - 234 identity-like directories named `0001` through `0234`; directory names are pseudonymous candidate labels, not verified real identities.
 - 2,802 files identified as JPEG by file-signature inspection; every file reports 256×256 dimensions. A full decoder/model audit is still required.
 - 232 directories contain 12 images, `0183` contains 10, and `0234` contains 8.
@@ -416,7 +441,7 @@ CLI commands rather than microservices:
 ```
 python -m faceguard.train_pad --config configs/pad.yaml
 python -m faceguard.export --checkpoint models/pad_best.pt
-python scripts/extract_gallery.py --manifest PRIVATE_FRAD_MANIFEST
+python reference/archive/final-submission-excluded/scripts/extract_gallery.py --manifest PRIVATE_FRAD_MANIFEST
 python scripts/benchmark.py --input sample_video.mp4 --backend onnx-cpu
 python scripts/run_demo.py --source 0 --release models/manifest.json
 python scripts/run_demo.py --source path/to/file.mp4 --release models/manifest.json

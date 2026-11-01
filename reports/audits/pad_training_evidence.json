@@ -1,0 +1,126 @@
+{
+  "schema_version": 1,
+  "event": "kaggle_pad_training_evidence_audit",
+  "audited_on": "2026-11-01",
+  "executed_notebook": {
+    "path": "reference/archive/final-submission-excluded/notebooks/03_kaggle_pad_training_executed.ipynb",
+    "sha256": "42ffe47cf05c4ec1051c70a682025be944355f694e3291da4c38a37d96533a72",
+    "papermill_start": "2026-10-25T10:05:39.829100+00:00",
+    "papermill_end": "2026-10-25T12:34:10.549179+00:00",
+    "duration_seconds": 8910.720079,
+    "exception": null,
+    "code_cells": 7,
+    "code_cells_with_outputs": 7,
+    "output_errors": 0
+  },
+  "dataset": {
+    "name": "CelebA-Spoof",
+    "official_source": "https://github.com/ZhangYuanhan-AI/CelebA-Spoof",
+    "official_terms": "non-commercial research only; dataset images and derived data may not be published or redistributed",
+    "kaggle_mount": "attentionlayer241/celeba-spoof-for-face-antispoofing",
+    "kaggle_dataset_version_id": 2289782,
+    "kaggle_mirror_license": "Unknown",
+    "provenance_status": "official structure and annotation semantics observed, but the Kaggle mirror is not an official distribution and its redistribution authority is not evidenced"
+  },
+  "label_mapping": {
+    "official_source_field": "labels[43]",
+    "official_source_convention": {
+      "0": "live",
+      "1": "spoof"
+    },
+    "runtime_target_convention": {
+      "0": "attack",
+      "1": "bona_fide"
+    },
+    "conversion": "target_live = 1 - source_live_spoof_label",
+    "cross_checks": "source folder, spoof type and live/spoof field must agree; inconsistent rows are excluded",
+    "observed_inconsistent_train_rows": 2022,
+    "observed_inconsistent_test_rows": 0
+  },
+  "splits": {
+    "method": "official test retained; official train subjects divided into train/validation with seed 42; subject/path/hash leakage validator executed before training",
+    "train": {
+      "samples": 100000,
+      "subjects": 7357,
+      "bona_fide": 50000,
+      "attack": 50000,
+      "manifest_sha256": "7e8983ba4a29dfef885b52431f504ccc5515940f8a0fd7b0cd3eb2709b15ffe1"
+    },
+    "validation": {
+      "samples": 20000,
+      "subjects": 818,
+      "bona_fide": 10000,
+      "attack": 10000,
+      "manifest_sha256": "99586996f43ead4d41d42696eba1064db0c0f223bc7a8e2f4f155f874617efa4"
+    },
+    "test": {
+      "samples": 40000,
+      "subjects": 1004,
+      "bona_fide": 19614,
+      "attack": 20386,
+      "manifest_sha256": "78a752b32aa7a3b087e5e23801dffa02aea5c4a20ae9abf2e0831cd6844a961f"
+    },
+    "manifest_csvs_present_locally": false
+  },
+  "training": {
+    "architecture": "torchvision_mobilenet_v3_small",
+    "pretrained_weights": "IMAGENET1K_V1",
+    "seed": 42,
+    "world_size": 2,
+    "global_batch_size": 128,
+    "s0": {
+      "status": "passed",
+      "samples": 64,
+      "steps": 50,
+      "initial_loss": 0.6832571029663086,
+      "final_loss": 0.0015945889754220843
+    },
+    "e1_head_only_epochs_completed": 2,
+    "e2_final_block_epochs_completed": 6,
+    "best_validation_acer": 0.0074,
+    "training_history_file_present_locally": false
+  },
+  "threshold_and_test": {
+    "observed_selection_policy": "equal-error threshold selected from validation scores",
+    "blueprint_policy_compatibility": "unresolved: equal-error selection is not explicitly one of the frozen blueprint policy names",
+    "threshold": 0.7626009583473206,
+    "validation_apcer": 0.0074,
+    "validation_bpcer": 0.0074,
+    "test_apcer": 0.20837829883253212,
+    "test_bpcer": 0.01075762210665851,
+    "test_acer": 0.10956796046959531,
+    "test_auc": 0.98327750728869,
+    "test_counts": {
+      "false_negative_bona_fide": 211,
+      "false_positive_attack": 4248,
+      "true_negative_attack": 16138,
+      "true_positive_bona_fide": 19403
+    }
+  },
+  "artifacts": {
+    "bundle": {
+      "path": "reference/archive/final-submission-excluded/restricted-data/processed/pad_model_bundle.zip",
+      "sha256": "a6aaf76d43cf6ae8da53740cca62ab705fab1474d534047246f0b5e4dbf09ecf"
+    },
+    "onnx_sha256": "bd8bcc251df7b09285893f51dc35a3f7bd3d6e78c4be5641f49a4130f30e1359",
+    "checkpoint_sha256": "bea3e71050fa41ed75311c82cde85516919c208926611470a60632febe0936de",
+    "config_sha256": "0a5a81a694f1c6adf1edaf911327f6138af16ab9009c58998ca97576b0aa2ae6",
+    "metrics_sha256": "d8cd473fedb887753a95062a3790cb485ab83bd25138ea1c40be58bec23f8df0",
+    "onnx_parity_max_abs_difference": 0.000012874603271484375,
+    "bundle_crc_and_member_hash_verification": "passed"
+  },
+  "completion_blockers": [
+    "Export the exact pad_train.csv, pad_val.csv and pad_test.csv files whose hashes are recorded above.",
+    "Export the Kaggle pre-install and post-install environment reports with exact ONNX package versions.",
+    "Export training_history.json and validation/test score artifacts needed for independent threshold-policy verification.",
+    "Resolve the authority/provenance of the third-party Kaggle mirror or document acquisition from the official distribution.",
+    "Freeze a blueprint-compatible threshold policy before claiming the PAD threshold task complete."
+  ],
+  "scope_disposition": {
+    "decided_on": "2026-11-01",
+    "decision": "third-party PAD training reproducibility deferred outside the final academic-prototype scope",
+    "completion_credit_granted": false,
+    "production_or_reproducibility_claim_allowed": false,
+    "future_reactivation": "All completion blockers apply again if reproducible-research, production, commercial or certified-security scope is reopened."
+  }
+}

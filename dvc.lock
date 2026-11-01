@@ -11,22 +11,22 @@ stages:
       size: 1438
     - path: models/private
       hash: md5
-      md5: a51eb19bc3214edad4fcfdefd1529c27.dir
-      size: 209180436
-      nfiles: 12
+      md5: 59d4ea5878c7a87ab79171ac3db91f97.dir
+      size: 186546103
+      nfiles: 6
     - path: scripts/run_demo.py
       hash: md5
       md5: cc067d5aa603659db80bcdb0b31ccf39
       size: 14686
     - path: src/faceguard
       hash: md5
-      md5: a8d81f1e9ed7ffa2b8386be55d61766d.dir
-      size: 504466
-      nfiles: 50
+      md5: 39326ddb06c035bf7f6103a72cf53fbe.dir
+      size: 310340
+      nfiles: 29
     outs:
     - path: reports/environments/runtime_readiness.json
       hash: md5
-      md5: e3bc98373e1b23e11103e49b54f166eb
+      md5: fb3cde3908786decb065233a48faa0c1
       size: 762
   scan:
     cmd: .venv/bin/python scripts/scan_artifacts.py > 
@@ -34,14 +34,14 @@ stages:
     deps:
     - path: .gitignore
       hash: md5
-      md5: 9321efc0879888da8e77a2de25f55372
-      size: 941
+      md5: 2cbae4853b368152e2ebc795bf01a6b8
+      size: 954
     - path: scripts/scan_artifacts.py
       hash: md5
-      md5: 98ed6760365570959a1f141810e3401c
-      size: 2946
+      md5: daeff8c9bb6c26fa2959310abc231dbd
+      size: 3026
     outs:
     - path: reports/phase_receipts/artifact_scan.txt
       hash: md5
-      md5: fe3bbe3cbcab892a380d75088501e93c
-      size: 58
+      md5: d979d693ce80f569453eff7eeda59c2c
+      size: 55

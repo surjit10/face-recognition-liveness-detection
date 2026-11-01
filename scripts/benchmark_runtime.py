@@ -18,6 +18,7 @@ from pathlib import Path
 import cv2
 import numpy as np
 import onnxruntime as ort
+import yaml
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_ROOT / "src"))
@@ -89,6 +90,8 @@ def run_sequential(verifier, capture, warmup: int, duration: float):
     states: Counter = Counter()
     reasons: Counter = Counter()
     sequence = 0
+    verification_started: float | None = None
+    verification_completed_ms: float | None = None
     started = time.monotonic()
     while time.monotonic() - started < duration:
         ok, frame = capture.read()
@@ -101,11 +104,28 @@ def run_sequential(verifier, capture, warmup: int, duration: float):
             timestamp_ms = sequence * 1000.0 / (fps if fps > 0 else 30.0)
         begin = time.perf_counter()
         result = verifier.process(frame, timestamp_ms)
+        observed = time.monotonic()
+        if result.state.value == "COLLECTING_PAD" and verification_started is None:
+            verification_started = observed
+        elif (
+            result.state.value == "IDENTIFIED"
+            and verification_started is not None
+            and verification_completed_ms is None
+        ):
+            verification_completed_ms = (observed - verification_started) * 1000.0
         if sequence > warmup:
             latencies.append((time.perf_counter() - begin) * 1000.0)
             states[result.state.value] += 1
             reasons[result.reason] += 1
-    return latencies, states, reasons, sequence, 0, time.monotonic() - started
+    return (
+        latencies,
+        states,
+        reasons,
+        sequence,
+        0,
+        time.monotonic() - started,
+        verification_completed_ms,
+    )
 
 
 def run_live(verifier, config, capture, warmup: int, duration: float):
@@ -140,6 +160,8 @@ def run_live(verifier, config, capture, warmup: int, duration: float):
     latencies: list[float] = []
     states: Counter = Counter()
     reasons: Counter = Counter()
+    verification_started: float | None = None
+    verification_completed_ms: float | None = None
     started = time.monotonic()
     try:
         while time.monotonic() - started < duration and not done.is_set():
@@ -148,6 +170,15 @@ def run_live(verifier, config, capture, warmup: int, duration: float):
             except queue.Empty:
                 continue
             result = verifier.process(packet.frame_bgr, packet.captured_monotonic_ms)
+            observed = time.monotonic()
+            if result.state.value == "COLLECTING_PAD" and verification_started is None:
+                verification_started = observed
+            elif (
+                result.state.value == "IDENTIFIED"
+                and verification_started is not None
+                and verification_completed_ms is None
+            ):
+                verification_completed_ms = (observed - verification_started) * 1000.0
             if packet.sequence > warmup:
                 latencies.append(time.monotonic() * 1000.0 - packet.captured_monotonic_ms)
                 states[result.state.value] += 1
@@ -165,7 +196,81 @@ def run_live(verifier, config, capture, warmup: int, duration: float):
         frames.dropped_frames,
         failed.is_set(),
         time.monotonic() - started,
+        verification_completed_ms,
     )
+
+
+def _performance_gate(
+    session: dict[str, object], objective_path: Path, queue_size: int
+) -> dict[str, object]:
+    document = yaml.safe_load(objective_path.read_text(encoding="utf-8"))
+    if document.get("status") != "FROZEN":
+        raise RuntimeError("performance objective must be FROZEN")
+    targets = document["objectives"]
+    verification_ms = session.get("stable_face_verification_ms")
+    peak_memory = session.get("peak_memory_mb")
+    checks = {
+        "processed_fps": {
+            "observed": session["processed_fps"],
+            "operator": ">=",
+            "target": targets["minimum_processed_fps"],
+            "passed": session["processed_fps"] >= targets["minimum_processed_fps"],
+        },
+        "p95_capture_to_decision_ms": {
+            "observed": session["p95_latency_ms"],
+            "operator": "<=",
+            "target": targets["maximum_p95_capture_to_decision_ms"],
+            "passed": session["p95_latency_ms"]
+            <= targets["maximum_p95_capture_to_decision_ms"],
+        },
+        "peak_memory_mb": {
+            "observed": peak_memory,
+            "operator": "<=",
+            "target": targets["maximum_peak_memory_mb"],
+            "passed": peak_memory is not None
+            and peak_memory <= targets["maximum_peak_memory_mb"],
+        },
+        "stable_face_verification_seconds": {
+            "observed": None
+            if verification_ms is None
+            else round(float(verification_ms) / 1000.0, 3),
+            "operator": "<=",
+            "target": targets["maximum_stable_face_verification_seconds"],
+            "passed": verification_ms is not None
+            and verification_ms / 1000.0
+            <= targets["maximum_stable_face_verification_seconds"],
+        },
+        "read_failures": {
+            "observed": int(bool(session["read_failures"])),
+            "operator": "<=",
+            "target": targets["maximum_read_failures"],
+            "passed": int(bool(session["read_failures"]))
+            <= targets["maximum_read_failures"],
+        },
+        "camera_released": {
+            "observed": session["camera_released"],
+            "operator": "==",
+            "target": targets["camera_released_on_shutdown"],
+            "passed": session["camera_released"]
+            == targets["camera_released_on_shutdown"],
+        },
+        "frame_queue_size": {
+            "observed": queue_size,
+            "operator": "==",
+            "target": targets["bounded_latest_frame_queue_size"],
+            "passed": queue_size == targets["bounded_latest_frame_queue_size"],
+        },
+    }
+    try:
+        objective_label = str(objective_path.resolve().relative_to(PROJECT_ROOT))
+    except ValueError:
+        objective_label = str(objective_path)
+    return {
+        "objective": objective_label,
+        "objective_status": document["status"],
+        "checks": checks,
+        "passed": all(item["passed"] for item in checks.values()),
+    }
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
@@ -176,6 +281,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     source.add_argument("--video", type=Path)
     parser.add_argument("--seconds", type=float, default=15.0)
     parser.add_argument("--warmup-frames", type=int, default=5)
+    parser.add_argument(
+        "--objective",
+        type=Path,
+        default=PROJECT_ROOT / "configs/performance_objective.yaml",
+    )
     parser.add_argument(
         "--output",
         type=Path,
@@ -203,14 +313,27 @@ def main() -> int:
     camera = _camera_info(capture, args.camera) if args.video is None else None
     try:
         if args.video:
-            latencies, states, reasons, captured, dropped, elapsed = run_sequential(
-                verifier, capture, args.warmup_frames, args.seconds
-            )
+            (
+                latencies,
+                states,
+                reasons,
+                captured,
+                dropped,
+                elapsed,
+                verification_completed_ms,
+            ) = run_sequential(verifier, capture, args.warmup_frames, args.seconds)
             read_failed = False
         else:
-            latencies, states, reasons, captured, dropped, read_failed, elapsed = run_live(
-                verifier, config, capture, args.warmup_frames, args.seconds
-            )
+            (
+                latencies,
+                states,
+                reasons,
+                captured,
+                dropped,
+                read_failed,
+                elapsed,
+                verification_completed_ms,
+            ) = run_live(verifier, config, capture, args.warmup_frames, args.seconds)
     finally:
         capture.release()
     elapsed = max(elapsed, 0.001)
@@ -219,6 +342,26 @@ def main() -> int:
         return 2
     if read_failed:
         print("benchmark blocked: camera read failed", file=sys.stderr)
+        return 2
+
+    session = {
+        "duration_seconds": round(elapsed, 2),
+        "warmup_frames": args.warmup_frames,
+        "captured_frames": captured,
+        "processed_frames": len(latencies),
+        "dropped_frames": dropped,
+        "read_failures": read_failed,
+        "peak_memory_mb": _peak_memory_mb(),
+        "camera_released": not capture.isOpened(),
+        "stable_face_verification_ms": None
+        if verification_completed_ms is None
+        else round(verification_completed_ms, 2),
+        **_summarize(latencies, elapsed, states, reasons),
+    }
+    try:
+        performance_gate = _performance_gate(session, args.objective, config.frame_queue_size)
+    except (OSError, KeyError, TypeError, ValueError, RuntimeError, yaml.YAMLError) as exc:
+        print(f"benchmark blocked: invalid performance objective: {exc}", file=sys.stderr)
         return 2
 
     report = {
@@ -236,17 +379,8 @@ def main() -> int:
             "active_provider": config.providers[0],
             "available_providers": list(ort.get_available_providers()),
         },
-        "session": {
-            "duration_seconds": round(elapsed, 2),
-            "warmup_frames": args.warmup_frames,
-            "captured_frames": captured,
-            "processed_frames": len(latencies),
-            "dropped_frames": dropped,
-            "read_failures": read_failed,
-            "peak_memory_mb": _peak_memory_mb(),
-            "camera_released": not capture.isOpened(),
-            **_summarize(latencies, elapsed, states, reasons),
-        },
+        "session": session,
+        "performance_gate": performance_gate,
         "privacy": {
             "frames_retained": False,
             "embeddings_retained": False,

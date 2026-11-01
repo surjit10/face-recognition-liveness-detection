@@ -6,13 +6,12 @@ This directory contains the authoritative planning, progress and governance mate
 
 | Order | Document | Purpose |
 |---:|---|---|
-| 1 | [`1-reference.md`](1-reference.md) | Final local-prototype completion runbook and definition of done |
-| 2 | [`FaceGuard_AI_Implementation_Blueprint.md`](FaceGuard_AI_Implementation_Blueprint.md) | Full technical contract, no-assumption rules, algorithms and phase gates |
-| 3 | [`tracking/STATUS.md`](tracking/STATUS.md) | Current human-readable completion and blockers |
-| 4 | [`tracking/progress.yaml`](tracking/progress.yaml) | Canonical machine-readable tasks, dependencies, evidence and progress |
-| 5 | [`governance/TRACKER_POLICY.md`](governance/TRACKER_POLICY.md) | Rules for changing statuses and calculating completion |
-| 6 | [`architecture/REPOSITORY_STRUCTURE.md`](architecture/REPOSITORY_STRUCTURE.md) | Maintainable target repository layout, module boundaries and privacy zones |
-| 7 | [`REMOVAL_CHECKLIST.md`](REMOVAL_CHECKLIST.md) | Safe promotion and dependency checks before deleting this temporary directory |
+| 1 | [`FaceGuard_AI_Implementation_Blueprint.md`](FaceGuard_AI_Implementation_Blueprint.md) | Full technical contract, no-assumption rules, algorithms and phase gates |
+| 2 | [`tracking/STATUS.md`](tracking/STATUS.md) | Current human-readable completion and blockers |
+| 3 | [`tracking/progress.yaml`](tracking/progress.yaml) | Canonical machine-readable tasks, dependencies, evidence and progress |
+| 4 | [`governance/TRACKER_POLICY.md`](governance/TRACKER_POLICY.md) | Rules for changing statuses and calculating completion |
+| 5 | [`architecture/REPOSITORY_STRUCTURE.md`](architecture/REPOSITORY_STRUCTURE.md) | Maintainable target repository layout, module boundaries and privacy zones |
+| 6 | [`REMOVAL_CHECKLIST.md`](REMOVAL_CHECKLIST.md) | Safe promotion and dependency checks before deleting this temporary directory |
 
 ## Templates
 
@@ -24,12 +23,12 @@ Templates are not execution evidence. Their placeholder or example values may no
 ## Current status
 
 - Active phase: **P0 — audit and governance**
-- Verified tasks: **20 of 59**
-- Remaining tasks: **39**
-- Evidence-based completion: **33.9%**
+- Verified tasks: **47 of 59**
+- Remaining tasks: **12**
+- Evidence-based completion: **79.7%**
 - P1 face recognition: **10 of 10 tasks complete**.
-- Immediate prototype goal: finish runtime hardening, documentation, privacy checks and the deferred five-case camera acceptance run.
-- Further PAD training is outside the user-approved prototype scope; its missing dataset provenance remains a blocker only for the broader production blueprint.
+- Immediate prototype goal: optionally evidence the private CI workflow on an authorized self-hosted runner.
+- Third-party PAD training reproducibility is outside the user-approved academic scope. Its eleven tasks remain blocked with zero completion credit and become mandatory again for reproducibility, production, redistribution or certification claims.
 
 The status dashboard and YAML must be updated together after meaningful work. Percentages measure passed checklist items, not estimated effort or generated code.
 
@@ -51,7 +50,6 @@ When documents disagree, actual verified evidence and the blueprint take precede
 
 ```text
 reference/
-├── 1-reference.md                    # final local-prototype completion runbook
 ├── README.md
 ├── REMOVAL_CHECKLIST.md
 ├── FaceGuard_AI_Implementation_Blueprint.md
@@ -60,6 +58,8 @@ reference/
 ├── archive/                          # disposable pre-v2 material; never imported by v2
 │   ├── legacy_v1/
 │   ├── legacy_crop_tool/
+│   ├── planning/                     # completed implementation plans
+│   ├── submission-excluded/          # generated output and disposable caches
 │   └── workspace_metadata/
 ├── governance/
 │   └── TRACKER_POLICY.md

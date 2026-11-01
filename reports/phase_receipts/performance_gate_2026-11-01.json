@@ -1,0 +1,79 @@
+{
+  "schema_version": 1,
+  "event": "target_hardware_performance_gate",
+  "evaluated_at": "2026-11-01T05:14:14.886342+00:00",
+  "scope": "local supervised academic prototype",
+  "objective": {
+    "path": "configs/performance_objective.yaml",
+    "sha256": "cae1d76dc4aacb1cf7430742fdeff09cb1e3b484905f256b5acd82f778e6c7cf",
+    "status": "FROZEN"
+  },
+  "evidence": {
+    "full_path_benchmark": {
+      "path": "reports/benchmarks/prototype_camera.json",
+      "sha256": "18774492c0da07750205421e21edaa097e26ccaedbac9149c9f1ea3e3b942dd0"
+    },
+    "raw_stage_benchmark": {
+      "path": "reports/benchmarks/model_stages_cpu.json",
+      "sha256": "6feba6e16cfd3807d217d434ed7dc4ace3458194a0adb5957ae7daeae9f84bbb"
+    }
+  },
+  "checks": {
+    "processed_fps": {
+      "observed": 6.52,
+      "target_minimum": 5.0,
+      "status": "passed"
+    },
+    "p95_capture_to_decision_ms": {
+      "observed": 285.61,
+      "target_maximum": 500.0,
+      "status": "passed"
+    },
+    "peak_memory_mb": {
+      "observed": 644.2,
+      "target_maximum": 750.0,
+      "status": "passed"
+    },
+    "stable_face_verification_seconds": {
+      "observed": 1.34,
+      "target_maximum": 3.0,
+      "status": "passed"
+    },
+    "camera_read_failures": {
+      "observed": 0,
+      "target_maximum": 0,
+      "status": "passed"
+    },
+    "camera_released": {
+      "observed": true,
+      "target": true,
+      "status": "passed"
+    },
+    "bounded_frame_queue_size": {
+      "observed": 2,
+      "target": 2,
+      "reported_stale_frame_drops": 109,
+      "status": "passed"
+    }
+  },
+  "profiling": {
+    "raw_stage_median_ms": {
+      "face_detection": 35.378,
+      "pad": 1.494,
+      "face_recognition": 81.445
+    },
+    "largest_raw_stage": "face_recognition",
+    "optimization_decision": "No optimization was required because every frozen academic-demo objective passed. Altering the frozen recognition model or cadence would create new calibration and regression obligations without an unmet performance requirement."
+  },
+  "privacy": {
+    "frames_retained": false,
+    "embeddings_retained": false,
+    "biometric_values_recorded": false
+  },
+  "limitations": [
+    "One laptop, camera and enrolled operator; not a general hardware guarantee.",
+    "Queue drops are intentional stale-frame replacement and do not indicate unbounded memory growth.",
+    "Performance acceptance does not replace PAD or recognition accuracy evaluation."
+  ],
+  "overall_status": "passed"
+}

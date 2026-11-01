@@ -1,9 +1,15 @@
-# Model Artifacts
+# Model Boundary
 
-`models/manifest.json` will be the public-safe release contract after model files and hashes are verified. Actual weights, protected galleries and immutable local releases belong in the Git-ignored `private/` and `releases/` directories.
+The active application loads hash-pinned artifacts from Git-ignored local directories:
 
-Production startup must verify hashes and must never auto-download or silently replace weights.
+```text
+models/
+├── manifest.schema.json   # public release-manifest schema
+├── private/               # detector, recognizer, PAD model and gallery
+└── releases/              # optional immutable local release candidates
+```
 
-`manifest.schema.json` defines the strict candidate/release contract. A concrete
-`manifest.json` is generated only after the private gallery, both calibrated
-threshold reports, environment lock and all referenced hashes exist.
+Model weights and gallery vectors are required on the demonstration laptop but are
+never included in the public submission. Startup verifies their SHA-256 hashes from
+`configs/runtime.yaml` and fails closed on any mismatch. The runtime does not silently
+download or substitute a model.

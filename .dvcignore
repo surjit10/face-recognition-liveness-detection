@@ -1,5 +1,9 @@
 .venv/
 .venv-mlops/
+**/__pycache__/
+**/*.py[cod]
+.pytest_cache/
+dist/
 data/processed/
 reports/private/
 mlruns/

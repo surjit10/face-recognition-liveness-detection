@@ -68,6 +68,27 @@ MLflow uses a local SQLite backend and a local artifact store under `mlruns/`. B
 Git-ignored. It never logs images, crops, embeddings, person names or private score
 rows.
 
+### Latest local MLOps refresh
+
+The final academic-demo refresh on 1 November 2026 completed successfully:
+
+- DVC `readiness` and `scan` stages were reproduced and `dvc status` reported that the
+  pipeline was up to date.
+- MLflow run `final-academic-demo-20261101-v2` finished successfully with the current
+  benchmark: 6.52 processed FPS, 285.61 ms p95 latency and 644.2 MB peak memory.
+- The publishable, privacy-safe result is stored in
+  `reports/phase_receipts/mlflow_latest.json`; the private local database remains
+  excluded from submission.
+
+To compare MLflow runs visually, start the local UI and select two runs using the
+**Compare** control:
+
+```bash
+.venv-mlops/bin/mlflow ui --backend-store-uri sqlite:///mlflow.db
+```
+
+Then open `http://127.0.0.1:5000` and choose the `faceguard-prototype` experiment.
+
 ### 4. Container
 
 ```bash
@@ -88,7 +109,8 @@ the image. For a camera demo, pass `--device /dev/video0`, the X11 socket and
 |---|---|---|
 | Release approval | Not granted | Metadata generation and academic-scope eligibility checks are implemented, but this checkout is not represented as a clean or human-approved release. |
 | Private CI execution | Workflow implemented, runner execution not evidenced here | Private weights cannot be given to GitHub-hosted runners; the manual workflow requires an authorized self-hosted runner. |
-| Camera acceptance | Deferred | Five target-camera cases and a full-path benchmark with a face in view remain outside this product-finalization task. |
+| Camera acceptance | Prototype cases passed | Five guided target-camera cases and a full-path face-in-view benchmark are recorded in `reports/phase_receipts/camera_acceptance_2026-11-01.json`; broader attack/hardware validation remains deferred. |
+| PAD training reproducibility | Deferred outside academic scope | The online dataset, exact manifests, histories, scores and package lock are unavailable; the frozen PAD artifact is not presented as independently reproducible or production-ready. |
 | Full release artifact audit | Partial | The scanner covers tracked/staged files, not a release-manifest audit. |
 
 ## CI limits
@@ -101,7 +123,7 @@ remains a local/private-runner step recorded in
 The scanner reviews tracked, staged and non-ignored untracked paths. It remains a
 guardrail rather than a guarantee; human review is still required before publishing.
 
-## Interview talking points
+## Design rationale
 
 - Why isolated `.venv-mlops`: avoids contaminating the pinned runtime with DVC/MLflow
   dependency graphs.
@@ -110,6 +132,6 @@ guardrail rather than a guarantee; human review is still required before publish
 - Why MLflow logs evaluation rather than training: `PROTOTYPE_SCOPE` freezes further
   training; the tracked evidence is the frozen evaluation and benchmark.
 - Why a manifest is not an approval: it records hashes and dirty/clean worktree state;
-  unresolved PAD provenance and human sign-off remain separate gates.
+  deferred PAD reproducibility/provenance and human sign-off remain separate gates.
 - Why models are mounted into the container: keeps weights out of image layers and
   registry storage.

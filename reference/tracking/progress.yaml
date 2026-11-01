@@ -1,7 +1,7 @@
 schema_version: 1
 project_id: faceguard-ai-v2
-blueprint_version: "1.1"
-last_updated: "2026-10-26T08:52:00+05:30"
+blueprint_version: "1.2"
+last_updated: "2026-11-01T12:00:00+05:30"
 source_of_truth: reference/FaceGuard_AI_Implementation_Blueprint.md
 status_values:
   - NOT_STARTED
@@ -10,23 +10,23 @@ status_values:
   - COMPLETE
 progress_rule: "Completion percent is COMPLETE task count divided by total task count. BLOCKED tasks remain incomplete. A task can be COMPLETE only with verifiable evidence."
 summary:
-  active_phase: P4
+  active_phase: P0
   overall_status: IN_PROGRESS
   total_tasks: 59
-  complete_tasks: 42
-  remaining_tasks: 17
-  blocked_tasks: 0
-  completion_percent: 71.2
-  next_gate: "Perform deferred target hardware camera acceptance cases."
+  complete_tasks: 47
+  remaining_tasks: 12
+  blocked_tasks: 11
+  completion_percent: 79.7
+  next_gate: "Run the optional private-CI workflow on an authorized self-hosted runner; PAD training reproducibility is explicitly deferred outside academic-prototype scope."
 
 phases:
   - id: P0
     name: Repository, data, permission, and environment audit
     status: IN_PROGRESS
     total_tasks: 12
-    complete_tasks: 10
-    remaining_tasks: 2
-    completion_percent: 83.3
+    complete_tasks: 11
+    remaining_tasks: 1
+    completion_percent: 91.7
     exit_gate: "Cohort, permission, label meaning, evaluation limitation, manifests, decisions, and required environment evidence are VERIFIED."
     tasks:
       - id: P0-01
@@ -75,7 +75,7 @@ phases:
         status: COMPLETE
         evidence:
           - reports/audits/frad_audit.json
-          - models/private/frad_candidate_embeddings/embedding_extraction.json
+          - reference/archive/final-submission-excluded/restricted-model-artifacts/frad_candidate_embeddings/embedding_extraction.json
         notes: "Decode/dimensions/duplicate audit passed; SCRFD audit embedded 2,709 samples and explicitly quarantined 56 no-face and 38 multiple-face samples."
         blocked_by: []
       - id: P0-08
@@ -98,8 +98,11 @@ phases:
         title: Capture local, Kaggle, and CI environment preflight reports as available
         status: IN_PROGRESS
         evidence:
-          - reports/environments/environment_local_before.json
-        notes: "Local CPU preflight, dependency check, PAD ONNX load and inference passed. Local full-pipeline lock, Kaggle preflight, and CI environment remain pending."
+          - reference/archive/final-submission-excluded/reports/environments/environment_local_before.json
+          - reference/archive/final-submission-excluded/reports/environments/environment_local_runtime.json
+          - reports/environments/environment_kaggle_pad.json
+          - reports/environments/runtime_readiness.json
+        notes: "Local CPU preflight, full runtime and dependency checks pass. The recovered Kaggle report identifies Python, PyTorch and two T4 GPUs but lacks resolved ONNX package versions and before/after inventories; private-CI runner execution remains pending."
         blocked_by: []
       - id: P0-11
         title: Create and validate configs/decisions.yaml
@@ -109,13 +112,15 @@ phases:
         blocked_by: []
       - id: P0-12
         title: Add repository privacy, secret, biometric-data, and artifact ignore policy
-        status: IN_PROGRESS
+        status: COMPLETE
         evidence:
           - .gitignore
           - data/README.md
           - models/README.md
-        blocked_by:
-          - PUBLICATION_POLICY
+          - docs/PRIVACY.md
+          - docs/PUBLICATION_POLICY.md
+          - configs/decisions.yaml#PUBLICATION_POLICY
+        blocked_by: []
 
   - id: P1
     name: Face recognition and protected gallery
@@ -138,7 +143,7 @@ phases:
         status: COMPLETE
         evidence:
           - requirements-runtime.lock
-          - reports/environments/environment_local_runtime.json
+          - reference/archive/final-submission-excluded/reports/environments/environment_local_runtime.json
           - reports/environments/runtime_readiness.json
         blocked_by: []
       - id: P1-03
@@ -155,9 +160,9 @@ phases:
         title: Freeze enrollment, validation, and untouched test manifests
         status: COMPLETE
         evidence:
-          - data/manifests/templates
+          - reference/archive/final-submission-excluded/data/manifest-templates
           - src/faceguard/recognition_manifest.py
-          - scripts/validate_recognition_manifests.py
+          - reference/archive/final-submission-excluded/scripts/validate_recognition_manifests.py
           - tests/unit/test_recognition_manifest.py
         blocked_by:
           - P0-08
@@ -167,7 +172,7 @@ phases:
         status: COMPLETE
         evidence:
           - src/faceguard/gallery.py
-          - scripts/build_gallery.py
+          - reference/archive/final-submission-excluded/scripts/build_gallery.py
           - tests/unit/test_gallery.py
         blocked_by:
           - P1-03
@@ -192,8 +197,8 @@ phases:
         title: Calibrate the recognition threshold and margin on validation only
         status: COMPLETE
         evidence:
-          - scripts/evaluate_recognition.py
-          - scripts/calibrate_recognition.py
+          - reference/archive/final-submission-excluded/scripts/evaluate_recognition.py
+          - reference/archive/final-submission-excluded/scripts/calibrate_recognition.py
           - src/faceguard/recognition_metrics.py
           - tests/unit/test_recognition_metrics.py
         blocked_by:
@@ -204,7 +209,7 @@ phases:
         title: Run untouched open-set recognition evaluation with confidence intervals
         status: COMPLETE
         evidence:
-          - scripts/evaluate_recognition.py
+          - reference/archive/final-submission-excluded/scripts/evaluate_recognition.py
           - reports/evaluation/recognition_validation.json
           - reports/evaluation/recognition_test.json
         blocked_by:
@@ -221,7 +226,7 @@ phases:
 
   - id: P2
     name: Presentation attack detection training and ONNX export
-    status: IN_PROGRESS
+    status: BLOCKED
     total_tasks: 11
     complete_tasks: 0
     remaining_tasks: 11
@@ -230,83 +235,120 @@ phases:
     tasks:
       - id: P2-01
         title: Obtain and verify authorized official PAD dataset access and terms
-        status: NOT_STARTED
-        evidence: []
+        status: BLOCKED
+        evidence:
+          - configs/decisions.yaml#PAD_DATASET_PERMISSION
+          - docs/PUBLICATION_POLICY.md
+          - reports/audits/pad_training_evidence.json
+          - reference/archive/final-submission-excluded/notebooks/03_kaggle_pad_training_executed.ipynb
         blocked_by:
           - PAD_DATASET_PERMISSION
+        notes: "Official CelebA-Spoof non-commercial terms and the executed acknowledgment are recorded. Completion remains blocked because the third-party Kaggle mirror reports an unknown license and is not evidenced as an official authorized distribution. User scope now explicitly defers further provenance recovery for the academic prototype."
       - id: P2-02
         title: Verify PAD source annotations and bona_fide=1 attack=0 mapping
-        status: NOT_STARTED
-        evidence: []
+        status: BLOCKED
+        evidence:
+          - configs/decisions.yaml#PAD_LABEL_MAPPING
+          - reports/audits/pad_training_evidence.json
+          - src/faceguard/pad_manifest.py
         blocked_by:
           - P2-01
           - PAD_LABEL_MAPPING
+        notes: "The label mapping itself is verified from official field semantics and executed folder/spoof-type consistency checks, but the upstream dataset-distribution permission gate remains open."
       - id: P2-03
         title: Freeze subject-disjoint PAD train, validation, and test manifests
-        status: IN_PROGRESS
+        status: BLOCKED
         evidence:
           - src/faceguard/pad_manifest.py
           - tests/unit/test_pad.py
           - tests/unit/test_pad_manifest_optimized.py
+          - reports/audits/pad_training_evidence.json
+          - models/private/pad_candidate/pad_config.json
         blocked_by:
           - P2-02
+        notes: "The executed run records subject-disjoint counts and three manifest hashes, but the exact private CSVs were not exported from Kaggle. User scope explicitly defers their recovery; no reproducibility completion credit is claimed."
       - id: P2-04
         title: Freeze Kaggle training environment and resolved training configuration
-        status: NOT_STARTED
-        evidence: []
+        status: BLOCKED
+        evidence:
+          - reference/archive/final-submission-excluded/notebooks/03_kaggle_pad_training_executed.ipynb
+          - reports/environments/environment_kaggle_pad.json
+          - models/private/pad_candidate/pad_config.json
         blocked_by:
           - KAGGLE_ENVIRONMENT
           - PAD_TRAINING_CONFIG
+        notes: "Python, PyTorch, CUDA and two T4 GPUs are evidenced and the resolved training config is verified. ONNX package versions and before/after package inventories were not recorded; user scope explicitly defers reconstructing this environment lock."
       - id: P2-05
         title: Implement deterministic PAD dataset and preprocessing pipeline
-        status: IN_PROGRESS
+        status: BLOCKED
         evidence:
           - src/faceguard/pad_manifest.py
-          - scripts/train_pad.py
+          - reference/archive/final-submission-excluded/scripts/train_pad.py
           - tests/unit/test_pad.py
+          - reference/archive/final-submission-excluded/notebooks/03_kaggle_pad_training_executed.ipynb
+          - reports/audits/pad_training_evidence.json
         blocked_by:
           - P2-03
           - P2-04
       - id: P2-06
         title: Pass S0 tiny-sample overfit and one-epoch sanity gates
-        status: NOT_STARTED
-        evidence: []
+        status: BLOCKED
+        evidence:
+          - reference/archive/final-submission-excluded/notebooks/03_kaggle_pad_training_executed.ipynb
+          - reports/audits/pad_training_evidence.json
+          - models/private/pad_candidate/pad_config.json
         blocked_by:
           - P2-05
+        notes: "The executed run passed S0 (loss 0.6833 to 0.0016) and completed the first epoch, but the upstream reproducibility gates remain incomplete."
       - id: P2-07
         title: Complete and record E1 head-only training
-        status: NOT_STARTED
-        evidence: []
+        status: BLOCKED
+        evidence:
+          - reference/archive/final-submission-excluded/notebooks/03_kaggle_pad_training_executed.ipynb
+          - reports/audits/pad_training_evidence.json
         blocked_by:
           - P2-06
+        notes: "Two head-only epochs completed successfully; independent completion credit waits on the upstream manifest/environment gates and exported training history."
       - id: P2-08
         title: Complete and record E2 final-block fine-tuning
-        status: NOT_STARTED
-        evidence: []
+        status: BLOCKED
+        evidence:
+          - reference/archive/final-submission-excluded/notebooks/03_kaggle_pad_training_executed.ipynb
+          - reports/audits/pad_training_evidence.json
+          - models/private/pad_candidate/mobilenetv3_pad_best.pth
         blocked_by:
           - P2-07
+        notes: "Six final-block fine-tuning epochs completed; the checkpoint hash matches the downloaded bundle, but training_history.json was not exported."
       - id: P2-09
         title: Freeze PAD threshold from validation and run untouched evaluations
-        status: NOT_STARTED
-        evidence: []
+        status: BLOCKED
+        evidence:
+          - reference/archive/final-submission-excluded/notebooks/03_kaggle_pad_training_executed.ipynb
+          - reports/audits/pad_training_evidence.json
+          - models/private/pad_candidate/pad_metrics.json
         blocked_by:
           - P2-08
           - PAD_THRESHOLD_POLICY
+        notes: "The run selected 0.7626009583 from validation before evaluating test and recorded test APCER/BPCER/ACER/AUC. Completion is withheld because the observed equal-error selector is not an explicitly frozen blueprint policy and score artifacts were not exported. User scope explicitly defers recalibration/reproduction."
       - id: P2-10
         title: Export ONNX and pass representative-input numerical and decision parity
-        status: IN_PROGRESS
+        status: BLOCKED
         evidence:
-          - data/processed/pad_model_bundle.zip
+          - reference/archive/final-submission-excluded/restricted-data/processed/pad_model_bundle.zip
           - src/faceguard/pad.py
           - tests/unit/test_pad_runtime.py
+          - reference/archive/final-submission-excluded/notebooks/03_kaggle_pad_training_executed.ipynb
+          - models/private/pad_candidate/pad_metrics.json
         blocked_by:
           - P2-09
       - id: P2-11
         title: Publish private artifacts, checksums, reports, and PAD model card
-        status: IN_PROGRESS
+        status: BLOCKED
         evidence:
-          - data/processed/pad_model_bundle.zip
-          - scripts/prepare_runtime_artifacts.py
+          - reference/archive/final-submission-excluded/restricted-data/processed/pad_model_bundle.zip
+          - reference/archive/final-submission-excluded/scripts/prepare_runtime_artifacts.py
+          - reports/audits/pad_training_evidence.json
+          - docs/PROTOTYPE_MODEL_CARD.md
         blocked_by:
           - P2-10
 
@@ -391,19 +433,22 @@ phases:
 
   - id: P4
     name: Live runtime, queueing, and target-hardware performance
-    status: IN_PROGRESS
+    status: COMPLETE
     total_tasks: 8
-    complete_tasks: 4
-    remaining_tasks: 4
-    completion_percent: 50.0
+    complete_tasks: 8
+    remaining_tasks: 0
+    completion_percent: 100.0
     exit_gate: "Live/paced runtime is bounded, reconnect-safe, measured on frozen target hardware, and meets recorded objectives."
     tasks:
       - id: P4-01
         title: Freeze target laptop, OS, CPU, RAM, camera, and performance objective
-        status: NOT_STARTED
-        evidence: []
-        blocked_by:
-          - TARGET_HARDWARE
+        status: COMPLETE
+        evidence:
+          - configs/performance_objective.yaml
+          - reports/benchmarks/prototype_camera.json
+          - reports/benchmarks/model_stages_cpu.json
+        blocked_by: []
+        notes: "The user approved the academic-demo objective on the recorded target laptop and USB UVC camera. A fresh benchmark is required under P4-07 to judge performance against it."
       - id: P4-02
         title: Implement bounded latest-frame producer/consumer queue
         status: COMPLETE
@@ -441,32 +486,40 @@ phases:
         title: Validate ONNX CPU providers and thread configuration
         status: COMPLETE
         evidence:
-          - reports/environments/environment_local_runtime.json
+          - reference/archive/final-submission-excluded/reports/environments/environment_local_runtime.json
           - src/faceguard/pad.py
         blocked_by: []
       - id: P4-06
         title: Run paced-video stress, queue overflow, and bounded-memory tests
-        status: IN_PROGRESS
+        status: COMPLETE
         evidence:
           - tests/unit/test_runtime.py
           - tests/unit/test_session.py
-        blocked_by:
-          - P4-02
-          - P4-04
+          - tests/integration/test_sequential_video_pipeline.py
+          - reports/benchmarks/prototype_camera.json
+          - reports/phase_receipts/performance_gate_2026-11-01.json
+        blocked_by: []
       - id: P4-07
         title: Benchmark stage/end-to-end latency, FPS, frame age, memory, and drops
-        status: NOT_STARTED
-        evidence: []
-        blocked_by:
-          - P4-01
-          - P4-05
-          - P4-06
+        status: COMPLETE
+        evidence:
+          - reports/benchmarks/prototype_camera.json
+          - reports/phase_receipts/camera_acceptance_2026-11-01.json
+          - reports/benchmarks/model_stages_cpu.json
+          - scripts/benchmark_stages.py
+          - reports/phase_receipts/performance_gate_2026-11-01.json
+        notes: "The post-approval face-in-view run exercised PAD and accepted identity and passed every frozen objective. Raw ONNX stage timing, end-to-end frame age, FPS, memory, drops, verification time and shutdown are recorded."
+        blocked_by: []
       - id: P4-08
         title: Profile and optimize only measured bottlenecks, then rerun regression gates
-        status: NOT_STARTED
-        evidence: []
-        blocked_by:
-          - P4-07
+        status: COMPLETE
+        evidence:
+          - reports/benchmarks/model_stages_cpu.json
+          - reports/benchmarks/prototype_camera.json
+          - reports/phase_receipts/performance_gate_2026-11-01.json
+          - tests/unit/test_benchmark_runtime.py
+        blocked_by: []
+        notes: "Recognition was the largest raw ONNX stage, but all frozen academic-demo objectives passed. No model/cadence optimization was justified because it would create new calibration and regression obligations without an unmet target; the final regression suite passed."
 
   - id: P5
     name: Reproducibility, CI, packaging, release, and interview evidence
@@ -566,11 +619,63 @@ phases:
         status: COMPLETE
         evidence:
           - scripts/promote_release.py
-          - reports/phase_receipts/promotion_faceguard-v2-development.json
+          - reference/archive/final-submission-excluded/reports/phase_receipts/promotion_faceguard-v2-development.json
           - tests/unit/test_promote_release.py
         blocked_by: []
 
 change_log:
+  - timestamp: "2026-11-01T12:00:00+05:30"
+    actor: codex
+    change: "Applied the user's explicit academic-scope amendment: reproduction/recovery of the third-party online PAD training run is no longer a final-deliverable requirement. Blueprint v1.2 accepts the frozen PAD artifact only as a development baseline supported by the executed notebook, artifact hashes, local ONNX checks and live acceptance evidence. P2-01 through P2-11 are now visibly BLOCKED with zero completion credit; missing online data, manifests, history, scores, package lock, distribution provenance and blueprint-compatible threshold policy are not hidden or represented as passed. Production, commercial, certified-security and reproducibility claims remain prohibited. Completion counts remain 47/59 (79.7%); 11 of the 12 remaining tasks are intentionally deferred PAD research tasks."
+    affected_tasks:
+      - P2-01
+      - P2-02
+      - P2-03
+      - P2-04
+      - P2-05
+      - P2-06
+      - P2-07
+      - P2-08
+      - P2-09
+      - P2-10
+      - P2-11
+  - timestamp: "2026-11-01T11:45:00+05:30"
+    actor: codex
+    change: "Verified the fresh post-approval face-in-view benchmark and recorded a passed performance receipt. The run achieved 6.52 processed FPS, 285.61 ms p95 capture-to-decision latency, 644.2 MB peak memory, 1.34-second stable-face verification, zero read failures, clean camera release and a bounded size-2 queue. Raw stage profiling identified recognition as the largest ONNX stage, but no optimization was justified because every frozen academic-demo target passed; changing the frozen model/cadence would introduce new calibration risk. Paced-video, queue stress, bounded-memory, stage/end-to-end measurement and final regression evidence complete P4-06 through P4-08. P4 is complete; overall completion changed from 44/59 (74.6%) to 47/59 (79.7%)."
+    affected_tasks:
+      - P4-06
+      - P4-07
+      - P4-08
+  - timestamp: "2026-11-01T11:30:00+05:30"
+    actor: codex
+    change: "Recorded the user's explicit approval of the academic-prototype performance objective: at least 5 processed FPS, p95 capture-to-decision latency at most 500 ms, peak memory at most 750 MB, stable-face verification within 3 seconds, zero camera read failures, clean camera release and a bounded size-2 latest-frame queue. TARGET_HARDWARE is now FROZEN and P4-01 is COMPLETE. A fresh post-approval face-in-view run remains required for P4-07. Overall completion changed from 43/59 (72.9%) to 44/59 (74.6%)."
+    affected_tasks:
+      - P4-01
+      - P4-07
+  - timestamp: "2026-11-01T11:15:00+05:30"
+    actor: codex
+    change: "Audited the executed Kaggle PAD notebook under reference/kaggle and recovered its successful two-T4 run evidence: subject-disjoint 100k/20k/40k split counts and hashes, S0 pass, two E1 plus six E2 epochs, validation-selected threshold, untouched test metrics, ONNX parity and artifact hashes. Added privacy-safe audit/environment reports, verified the downloaded private bundle locally, recorded the official non-commercial terms and label mapping, and explicitly preserved blockers for the unknown-license Kaggle mirror, absent manifest CSVs/training history, incomplete environment lock and non-blueprint EER threshold policy. User approval froze the publication/privacy policy, completing P0-12. Added a proposed target-hardware objective and a raw CPU ONNX stage benchmark; P4-01 and P4-07 remain IN_PROGRESS pending objective acceptance and a fresh gate run. Overall completion changed from 42/59 (71.2%) to 43/59 (72.9%)."
+    affected_tasks:
+      - P0-10
+      - P0-12
+      - P2-01
+      - P2-02
+      - P2-03
+      - P2-04
+      - P2-05
+      - P2-06
+      - P2-07
+      - P2-08
+      - P2-09
+      - P2-10
+      - P2-11
+      - P4-01
+      - P4-07
+  - timestamp: "2026-11-01T10:30:00+05:30"
+    actor: codex
+    change: "Recorded the guided camera acceptance session without retaining screenshots or biometric data: enrolled verification and attendance deduplication, unknown-person rejection, phone-display liveness rejection, empty-scene handling, and multiple-face identity blocking all passed. Replaced the empty-scene benchmark with a 15.34-second face-in-view run that exercised PAD and accepted identity at 6.26 processed FPS, 244.16 ms median and 293.57 ms p95 capture-to-decision latency, 644.2 MB peak memory, 112 bounded-queue drops, no read failures, and clean camera release. P4-07 moved to IN_PROGRESS; no completion credit was added because no performance objective or stage-specific latency is frozen."
+    affected_tasks:
+      - P4-07
   - timestamp: "2026-10-26T09:40:00+05:30"
     actor: antigravity
     change: "Implemented attendance_admin and operator role separation with salted PBKDF2 credential verification in operator_auth and configure_operator. Desktop GUI dynamically restricts navigation for attendance admins to verification and attendance register while hiding enrollment, user management, and settings. Added active Stop control and automatic 4-second reset after attendance recording to prevent screen freezing. Verification: 154 automated tests, pip check, 200-path artifact scan, and camera-free unit tests passing."

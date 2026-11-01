@@ -7,7 +7,7 @@
   "identity_exposure": "numeric folder ID remains a pseudonymous application ID",
   "scope": {
     "candidate_subjects": 234,
-    "dataset_root": "data/processed/frad_legacy_crops"
+    "dataset_root": "reference/archive/final-submission-excluded/restricted-data/processed/frad_legacy_crops"
   },
   "limitations": [
     "Capture-session and device metadata remain unverified.",

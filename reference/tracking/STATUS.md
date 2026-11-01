@@ -1,27 +1,27 @@
 # FaceGuard AI v2 — Implementation Status
 
-**Last updated:** 26 October 2026, 08:52 IST
-**Blueprint:** v1.1
+**Last updated:** 1 November 2026, 12:00 IST
+**Blueprint:** v1.2
 **Canonical tracker:** [`progress.yaml`](progress.yaml)
-**Active phase:** P4 — live runtime, queueing, and target-hardware performance
+**Active phase:** P0 — optional private-CI execution evidence
 
 ## Current progress
 
 | Phase | Completed | Remaining | Progress | State |
 |---|---:|---:|---:|---|
-| P0 — Audit and governance | 10 / 12 | 2 | 83.3% | In progress |
+| P0 — Audit and governance | 11 / 12 | 1 | 91.7% | In progress |
 | P1 — Face recognition | 10 / 10 | 0 | 100.0% | Complete |
-| P2 — Anti-spoofing | 0 / 11 | 11 | 0.0% | Frozen prototype baseline |
+| P2 — Anti-spoofing | 0 / 11 | 11 | 0.0% | Blocked — training reproducibility deferred |
 | P3 — Integrated video pipeline | 8 / 8 | 0 | 100.0% | Complete |
-| P4 — Live runtime and benchmarks | 4 / 8 | 4 | 50.0% | In progress |
+| P4 — Live runtime and benchmarks | 8 / 8 | 0 | 100.0% | Complete |
 | P5 — Release engineering | 10 / 10 | 0 | 100.0% | Complete |
-| **Overall** | **42 / 59** | **17** | **71.2%** | **In progress** |
+| **Overall** | **47 / 59** | **12** | **79.7%** | **In progress** |
 
 This percentage measures verified implementation tasks, not effort, elapsed time, lines of code, or model quality. Blocked tasks remain incomplete. See the canonical YAML for every task, dependency, and evidence path.
 
 ## Completed evidence
 
-1. Blueprint v1.1 is frozen as the implementation contract.
+1. Blueprint v1.2 is frozen as the implementation contract.
 2. A structural dataset baseline records 234 folders, 2,802 JPEG-signature files, incomplete folders `0183`/`0234`, and one exact duplicate.
 3. The no-assumption policy and current blocker register are documented.
 4. The real `configs/decisions.yaml` exists and passes YAML validation.
@@ -53,10 +53,17 @@ This percentage measures verified implementation tasks, not effort, elapsed time
 30. The desktop presentation now removes internal release/model identifiers, uses one professional navigation shell, provides guided enrollment steps, scrollable/empty data views, toast feedback, keyboard and full-screen presentation controls, high-DPI scaling, safe demo reset, and optional salted PBKDF2 local operator locking for protected screens (`src/faceguard/ui/`, `src/faceguard/operator_auth.py`, `scripts/configure_operator.py`).
 31. Verified results now mark local attendance automatically once per identity per calendar day on a background worker; legacy history migrates safely, and the bright attendance register groups records by month/day with filtering, CSV export, and confirmed deletion (`src/faceguard/checkins.py`, `src/faceguard/ui/`, `tests/unit/test_checkins.py`).
 32. Verification is now a terminal operator flow: the accepted frame is frozen, attendance is queued, the camera is released, and the result remains visible without allowing a later track to replace it. The main screen no longer exposes console event JSON, machine diagnostics, decorative status symbols, or redundant controls (`src/faceguard/ui/app.py`, `src/faceguard/ui/live_view.py`, `scripts/run_app.py`, `tests/unit/test_run_app_cli.py`).
+33. A privacy-safe guided camera receipt records passed enrolled, unknown-person, phone-display liveness-rejection, empty-scene and multiple-face cases plus attendance verification. A new face-in-view benchmark exercised PAD and accepted identity with no read failure and clean camera release (`reports/phase_receipts/camera_acceptance_2026-11-01.json`, `reports/benchmarks/prototype_camera.json`).
+34. The executed Kaggle PAD notebook is now audited as evidence of a successful two-T4 run: subject-disjoint 100k/20k/40k split summaries and hashes, S0, two head-only plus six fine-tuning epochs, validation threshold selection, untouched test metrics, ONNX parity and downloaded artifact hashes agree. The exact manifest CSVs, full package lock and training-history/score exports remain missing, and the third-party Kaggle mirror declares an unknown license (`reference/archive/final-submission-excluded/notebooks/03_kaggle_pad_training_executed.ipynb`, `reports/audits/pad_training_evidence.json`).
+35. The user-approved publication policy now freezes the academic submission boundary: code and aggregate evidence may be shared, while biometric data, weights, credentials and restricted dataset content remain private (`docs/PUBLICATION_POLICY.md`, `configs/decisions.yaml#PUBLICATION_POLICY`).
+36. A privacy-safe raw ONNX stage benchmark records median CPU inference of 35.378 ms for detection, 1.494 ms for PAD and 81.445 ms for recognition over 100 iterations (`reports/benchmarks/model_stages_cpu.json`, `configs/performance_objective.yaml`).
+37. The user approved and froze the academic-demo performance objective on the recorded laptop and USB UVC camera: at least 5 processed FPS, p95 latency at most 500 ms, peak memory at most 750 MB, stable-face verification within 3 seconds, zero read failures and clean camera release (`configs/performance_objective.yaml`, `configs/decisions.yaml#TARGET_HARDWARE`).
+38. The fresh post-approval face-in-view run passed every frozen objective: 6.52 processed FPS, 285.61 ms p95 latency, 644.2 MB peak memory, 1.34-second stable-face verification, zero read failures, clean release and a bounded size-2 queue. Stage profiling found recognition was the largest raw stage, but no optimization was justified because all targets passed; P4 is complete (`reports/phase_receipts/performance_gate_2026-11-01.json`).
+39. The user-approved academic scope amendment defers third-party PAD training reproducibility. The missing dataset, exact manifests, score/history exports, package lock and rerun remain openly recorded limitations with zero completion credit; the project makes no PAD reproducibility, production, redistribution or certification claim (`FaceGuard_AI_Implementation_Blueprint.md#0e-academic-prototype-pad-evidence-amendment-1-november-2026`, `configs/decisions.yaml#PAD_REPRODUCIBILITY_SCOPE`).
 
 Runtime implementation now includes a protected gallery, validation-only recognition
 threshold selector, hash-verified PAD ONNX loader, PAD-before-recognition state
-machine, bounded latest-frame queue, live camera auto-reconnect, centralized desktop interface, Docker container deployment, and strict configuration. All 143 automated
+machine, bounded latest-frame queue, live camera auto-reconnect, centralized desktop interface, Docker container deployment, and strict configuration. All 156 automated
 tests pass and all configured models load on the local CPU environment. These are
 phase receipts, not a production-release claim.
 
@@ -80,30 +87,37 @@ while gallery and SQLite writes run on background workers. Verified identities a
 marked present at most once per local day and displayed by month/day. A camera-free
 real-window smoke test passed; no camera was opened during that verification.
 
-These items do not mean session semantics, splits, the complete runtime environment,
-recognition thresholds, target-camera PAD robustness, or release readiness are verified.
-The recorded benchmark session contained no face, so it measures capture and detection
-only; PAD and recognition latency were not exercised.
+These items do not mean session semantics, independent PAD split reproduction, broad
+target-camera PAD robustness, or release readiness are verified. The performance
+objective is frozen and passed only for the recorded laptop, camera and academic-demo
+workload; it is not a general hardware or security guarantee.
 
-Work in progress without completion credit: the five deferred camera acceptance cases,
-a full-path benchmark with the operator in frame, PAD
-manifest retrieval and Kaggle/CI preflights remain pending.
+The five guided camera acceptance cases, passed target-hardware gate, executed PAD
+training notebook and raw stage benchmark are recorded without unsupported
+completion-credit inflation. Exact PAD manifest/training-history exports, distribution
+provenance, a complete Kaggle package lock and broader attack/device testing remain
+known limitations that the approved academic scope does not require recovering.
+Private-CI execution remains the only incomplete non-PAD implementation-evidence task.
 
-## Immediate blockers
+## Deferred limitations and production blockers
 
 | Blocker | Why it matters | Resolution required |
 |---|---|---|
 | Recognition generalization | Exploratory test FPIR is 1.79% (5/280 searches) | Collect stronger unknown/session-separated validation data before production claims |
 | PAD generalization | Test APCER is approximately 20.84% | Evaluate target-camera attack videos and retrain if the declared bound is not met |
+| PAD reproducibility | Manifest hashes and run outputs exist, but exact CSVs, score artifacts and complete Kaggle package versions were not exported | Deferred outside the academic prototype; recover or rerun only if reproducibility or production scope is reopened |
+| PAD distribution provenance | Official terms allow non-commercial research, but the used Kaggle mirror labels its license `Unknown` | Academic local use only; never redistribute the mirror or derived content, and resolve authorization before broader use |
 
-P2 is additionally blocked until an authorized labeled PAD dataset and its label semantics are available.
+The PAD label mapping is verified, but all eleven P2 tasks remain `BLOCKED` with zero
+completion credit. Under the v1.2 amendment they do not block the supervised local
+academic demonstration; they immediately become required again for any reproducible,
+production, redistribution, certification or broader-deployment claim.
 
 ## Next permitted work
 
-1. Perform the five deferred camera acceptance cases (A–E) and record pass/fail without tuning thresholds.
-2. Re-run the benchmark with the operator in frame to measure PAD and recognition latency.
-3. Retrieve and verify the PAD train/validation/test manifests from the training run.
-4. Evaluate target-camera attacks and unknown people before any production claim.
+1. Optionally connect GitHub and run the private workflow on an authorized self-hosted runner if private-CI evidence is required.
+2. Present the academic prototype with the recorded limitations and do not claim PAD training reproducibility, production readiness or certification.
+3. Reopen the deferred P2 evidence gates only if the intended scope expands beyond the supervised local academic demonstration.
 
 Model training, gallery generation, cloud upload and release claims remain prohibited until their blueprint gates pass.
 

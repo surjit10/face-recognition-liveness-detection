@@ -6,8 +6,10 @@ from __future__ import annotations
 import argparse
 from datetime import datetime, timezone
 import json
+import os
 from pathlib import Path
 import sys
+import tempfile
 
 import yaml
 
@@ -42,6 +44,12 @@ def main() -> int:
     )
     parser.add_argument("--experiment", default="faceguard-prototype")
     parser.add_argument("--run-name", default=None)
+    parser.add_argument(
+        "--receipt",
+        type=Path,
+        default=PROJECT_ROOT / "reports/phase_receipts/mlflow_latest.json",
+        help="Privacy-safe JSON summary of the completed local MLflow run",
+    )
     args = parser.parse_args()
     try:
         import mlflow
@@ -68,7 +76,18 @@ def main() -> int:
     mlflow.set_tracking_uri(args.tracking_uri)
     mlflow.set_experiment(args.experiment)
     run_name = args.run_name or datetime.now(timezone.utc).strftime("prototype-%Y%m%dT%H%M%SZ")
+    logged_metrics = {
+        **_metrics("validation", validation),
+        **_metrics("test", test),
+        "benchmark_median_latency_ms": float(session.get("median_latency_ms", 0.0)),
+        "benchmark_p95_latency_ms": float(session.get("p95_latency_ms", 0.0)),
+        "benchmark_processed_fps": float(session.get("processed_fps", 0.0)),
+        "benchmark_peak_memory_mb": float(session.get("peak_memory_mb", 0.0)),
+        "benchmark_processed_frames": float(session.get("processed_frames", 0.0)),
+        "benchmark_dropped_frames": float(session.get("dropped_frames", 0.0)),
+    }
     with mlflow.start_run(run_name=run_name) as run:
+        run_id = run.info.run_id
         mlflow.set_tags(
             {
                 "project": "faceguard-ai",
@@ -95,22 +114,43 @@ def main() -> int:
                 "benchmark_camera": str(benchmark.get("source", {}).get("camera")),
             }
         )
-        mlflow.log_metrics(
-            {
-                **_metrics("validation", validation),
-                **_metrics("test", test),
-                "benchmark_median_latency_ms": float(session.get("median_latency_ms", 0.0)),
-                "benchmark_p95_latency_ms": float(session.get("p95_latency_ms", 0.0)),
-                "benchmark_processed_fps": float(session.get("processed_fps", 0.0)),
-                "benchmark_peak_memory_mb": float(session.get("peak_memory_mb", 0.0)),
-                "benchmark_processed_frames": float(session.get("processed_frames", 0.0)),
-                "benchmark_dropped_frames": float(session.get("dropped_frames", 0.0)),
-            }
-        )
+        mlflow.log_metrics(logged_metrics)
         for name, path in REPORTS.items():
             mlflow.log_artifact(str(path), artifact_path="reports")
         mlflow.log_artifact(str(PROJECT_ROOT / "configs/runtime.yaml"), artifact_path="config")
-        print(json.dumps({"event": "mlflow_run", "run_id": run.info.run_id, "status": run.info.status}))
+    completed_run = mlflow.get_run(run_id)
+    receipt = {
+        "schema_version": 1,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "event": "mlflow_run_completed",
+        "tracking": "local_sqlite",
+        "experiment": args.experiment,
+        "run_name": run_name,
+        "run_id": run_id,
+        "status": completed_run.info.status,
+        "release_id": config["release_id"],
+        "provider": provider,
+        "metrics": logged_metrics,
+        "source_reports": [str(path.relative_to(PROJECT_ROOT)) for path in REPORTS.values()],
+        "privacy": {
+            "frames_recorded": False,
+            "embeddings_recorded": False,
+            "identity_values_recorded": False,
+        },
+    }
+    args.receipt.parent.mkdir(parents=True, exist_ok=True)
+    rendered = json.dumps(receipt, indent=2, sort_keys=True) + "\n"
+    with tempfile.NamedTemporaryFile(
+        mode="w",
+        encoding="utf-8",
+        dir=args.receipt.parent,
+        prefix=f".{args.receipt.name}.",
+        delete=False,
+    ) as handle:
+        handle.write(rendered)
+        temporary = Path(handle.name)
+    os.replace(temporary, args.receipt)
+    print(json.dumps({"event": receipt["event"], "run_id": run_id, "status": receipt["status"]}))
     return 0
 
 

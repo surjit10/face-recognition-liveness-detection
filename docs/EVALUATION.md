@@ -49,53 +49,64 @@ establish general biometric security.
 ## PAD candidate
 
 The MobileNetV3 PAD candidate's recorded test APCER is approximately **20.84%** at the
-pinned operating point (`0.7626009583473206`, median of 8 observations). Its dataset
-permission, label semantics and split manifests are not independently verified, and its
-threshold-selection policy is not frozen. Treat PAD as a development candidate, not a
+pinned operating point (`0.7626009583473206`, median of 8 observations). The executed
+Kaggle notebook, official label semantics, split counts/hashes, training stages and
+artifact hashes are now audited in `reports/audits/pad_training_evidence.json`.
+However, the exact split CSVs and score artifacts were not exported, the used Kaggle
+mirror reports an unknown license, and the recorded equal-error threshold selector is
+not an explicitly frozen blueprint policy. Treat PAD as a development candidate, not a
 certified ISO/IEC 30107-3 result. RGB-only PAD may fail on unseen displays, prints,
 masks, lighting and cameras.
 
+The v1.2 academic-scope amendment explicitly defers recovery of the online dataset,
+exact manifests, training history, score exports, complete package lock and rerun.
+Accordingly, these recorded metrics are historical development evidence only; they do
+not establish an independently reproducible training result or production suitability.
+
 ## Target benchmark
 
-`reports/benchmarks/prototype_camera.json` records one 10-second local camera session:
+`reports/benchmarks/prototype_camera.json` records a 15-second local camera session
+with the enrolled operator in view:
 
 | Field | Value |
 |---|---|
 | OS / CPU / RAM | Linux 6.14.0-33 x86_64 / Intel Core i5-10300H @ 2.50 GHz, 8 logical CPUs / 15.5 GB |
 | Python / ONNX Runtime / provider | 3.12.3 / 1.31.0 / `CPUExecutionProvider` |
 | Camera | index `0`, 640 × 480, reported 30 FPS |
-| Duration / processed frames | 10.49 s / 62 |
-| Median / p95 capture-to-decision latency | 36.8 ms / 108.05 ms |
-| Approximate processed FPS | 5.91 |
-| Captured / dropped frames | 65 / 0 |
+| Duration / processed frames | 15.34 s / 100 |
+| Median / p95 capture-to-decision latency | 240.40 ms / 285.61 ms |
+| Approximate processed FPS | 6.52 |
+| Captured / dropped frames | 214 / 109 |
 | Read failures | 0 |
-| Peak memory | 643.2 MB |
+| Peak memory | 644.2 MB |
 | Camera released on shutdown | true |
-| Observed states | `RETRY` × 62 (`no_face`) |
+| Stable-face verification time | 1.34 s |
+| Observed states | `COLLECTING_PAD` × 4; `IDENTIFIED` × 96 |
 
-Because no face was present, this session exercised capture and detection only; PAD
-and recognition latency were not measured. Run the benchmark with the operator in
-frame for a full-path measurement. The receipt contains no frames, crops, embeddings or
-identity histories.
+This post-approval session exercised capture, PAD and accepted-identity paths and passed
+every frozen academic-demo performance objective. The bounded latest-frame queue
+discarded 109 stale waiting frames while processing 100 frames; no camera read failure
+occurred. This is not a general hardware guarantee. The receipt contains no frames,
+crops, embeddings or identity histories.
 
-## Deferred acceptance cases
+## Manual acceptance cases
 
-The five manual camera cases are intentionally deferred until the operator is ready.
-No results have been recorded yet. Perform each as a separate short session, camera `0`
-only, and record expected/observed state, timestamp and pass/fail. Never repeat until it
-passes, and never tune thresholds using these cases.
+The five manual camera cases were performed on 1 November 2026 with camera `0` and the
+frozen thresholds. The privacy-safe receipt is
+`reports/phase_receipts/camera_acceptance_2026-11-01.json`; screenshots containing
+faces were reviewed during the guided session and were not retained in the repository.
 
 | Case | Input | Required behavior | Status |
 |---|---|---|---|
-| A | Enrolled user `000` | PAD passes; identity becomes `000` | Pending |
-| B | Person absent from gallery | `UNKNOWN`; never another identity | Pending |
-| C | Printed photo or phone display | `LIVENESS NOT CONFIRMED` (internal `PAD_FAILED`) or another fail-closed result | Pending |
-| D | Empty scene | `NO FACE`; no identity | Pending |
-| E | Two or more faces | `MULTIPLE FACES`; no identity | Pending |
+| A | Enrolled operator | PAD passes; correct configured identity | Passed — screenshot reviewed |
+| B | Person absent from gallery | `UNKNOWN`; never another identity | Passed — operator attestation |
+| C | Face displayed on a phone | `LIVENESS NOT CONFIRMED` (internal `PAD_FAILED`) or another fail-closed result | Passed — `POSSIBLE SPOOF / REJECTED` |
+| D | Empty scene | `NO FACE`/`LOOKING FOR FACE`; no identity | Passed — screenshot reviewed |
+| E | Live face plus face displayed on a phone | `MULTIPLE FACES`; no identity | Passed — screenshot reviewed |
 
-Case C is expected to expose limitations of the current PAD model; document the
-observed outcome honestly. The application itself records no video; any manual
-recording is external and must be deleted after the approved retention period.
+Case C passed for the one phone/display combination tested, but it does not establish
+robustness to other displays, printed photos, masks, lighting or cameras. The
+application recorded no video, and the evidence receipt contains no biometric data.
 
 ## Mandatory limitations
 
@@ -104,10 +115,12 @@ recording is external and must be deleted after the approved retention period.
 - The exploratory held-out unknown-person false-positive identification rate was
   5/280 searches, approximately **1.79%**.
 - The current PAD candidate's test APCER was approximately **20.84%**.
+- Third-party PAD training reproducibility is explicitly deferred outside the academic
+  prototype; missing run artifacts receive no completion credit.
 - A successful live recognition of identity `000` proves the pipeline operates on the
   tested laptop; it does not establish general biometric or anti-spoof security.
 - RGB-only PAD may fail on unseen displays, prints, masks, lighting and cameras.
-- Thresholds must not be tuned using the deferred acceptance cases.
+- Thresholds were not tuned using the manual acceptance cases.
 - The system must not be used for high-stakes access control, surveillance, policing,
   employment, credit, healthcare or other consequential decisions.
 - The official InsightFace supplied models are used under their applicable

@@ -71,9 +71,12 @@ runtime.
 | Test | Known misidentification rate | 3 / 367 (0.82%) |
 | PAD candidate | Test APCER | approximately 20.84% |
 
-The PAD number is the candidate's recorded test APCER. Its dataset permission, label
-semantics and split manifests are not yet independently verified, so it is reported as
-a development observation, not a certified ISO/IEC 30107-3 result. A per-frame or
+The PAD number is the candidate's recorded test APCER. The executed training notebook,
+official label mapping, split counts/hashes and artifact hashes are audited, but the
+exact split CSVs and score artifacts are absent and the used third-party Kaggle mirror
+reports an unknown license. It remains a development observation, not a certified
+ISO/IEC 30107-3 result. The approved academic scope defers recovery or reproduction of
+the online training run, so no independently reproducible-training claim is made. A
 per-video BPCER/ACER is not claimed here.
 
 ## License and provenance
@@ -81,9 +84,11 @@ per-video BPCER/ACER is not claimed here.
 - The SCRFD and ArcFace weights are the official InsightFace `buffalo_m` files, used
   under the supplied InsightFace model terms (non-commercial research use). Each
   operator must acknowledge those terms during installation.
-- The PAD candidate was trained in this project and is a prototype artifact. Its
-  training-data permission and subject-disjoint split provenance remain unresolved;
-  no production or redistribution claim is made.
+- The PAD candidate was trained in this project and is a prototype artifact under the
+  official CelebA-Spoof non-commercial research restrictions. The used Kaggle mirror's
+  distribution authority and the exact split-file export remain unresolved; no
+  reproducibility, production, redistribution or certification claim is made. It is
+  accepted only as a frozen baseline for the supervised local academic demonstration.
 - No substitute model pack was downloaded, and hash verification is never disabled.
 
 ## Intended use
@@ -105,6 +110,8 @@ non-consenting people. Do not present the results as a security certification.
 - The exploratory held-out unknown-person false-positive identification rate was 5/280
   searches, approximately **1.79%**.
 - The current PAD candidate's test APCER was approximately **20.84%**.
+- Third-party PAD training reproducibility is deferred outside this academic prototype;
+  the missing dataset and exact run artifacts remain declared limitations.
 - A successful live recognition of identity `000` proves the pipeline operates on the
   tested laptop; it does not establish general biometric or anti-spoof security.
 - RGB-only PAD may fail on unseen displays, prints, masks, lighting and cameras.

@@ -1,0 +1,80 @@
+{
+  "schema_version": 1,
+  "event": "manual_camera_acceptance",
+  "performed_on": "2026-11-01",
+  "timezone": "Asia/Kolkata",
+  "scope": "local academic prototype",
+  "release_id": "faceguard-v2-development",
+  "source": {
+    "camera_index": 0,
+    "runtime_config": "configs/runtime.yaml",
+    "runtime_config_sha256": "bd55b154bb818eb125cf0fa2efece13693f2f1c5ca820829b4e13b1f50b61afb"
+  },
+  "cases": [
+    {
+      "id": "A",
+      "input": "enrolled operator",
+      "expected": "liveness passes and the configured identity is verified",
+      "observed": "liveness reached 8/8; the correct configured identity was verified; attendance deduplication reported already marked; the camera stopped automatically",
+      "status": "passed",
+      "evidence": "operator observation and screenshot reviewed during the guided session; screenshot not retained"
+    },
+    {
+      "id": "B",
+      "input": "consenting person absent from the gallery",
+      "expected": "UNKNOWN with no enrolled identity or attendance",
+      "observed": "UNKNOWN; no enrolled identity or attendance was reported",
+      "status": "passed",
+      "evidence": "operator attestation during the guided session"
+    },
+    {
+      "id": "C",
+      "input": "operator face displayed on a phone while the live face remained outside the camera view",
+      "expected": "liveness rejection with no identity or attendance",
+      "observed": "POSSIBLE SPOOF / REJECTED; LIVENESS NOT CONFIRMED; liveness reached 8/8; no identity or attendance was produced",
+      "status": "passed",
+      "evidence": "screenshot reviewed during the guided session; screenshot not retained"
+    },
+    {
+      "id": "D",
+      "input": "empty scene",
+      "expected": "LOOKING FOR FACE or NO FACE with no identity or attendance",
+      "observed": "LOOKING FOR FACE; liveness remained 0/8; no identity or attendance was produced; manual stop was required as designed",
+      "status": "passed",
+      "evidence": "screenshot reviewed during the guided session; screenshot not retained"
+    },
+    {
+      "id": "E",
+      "input": "live operator and a face displayed on a phone visible together",
+      "expected": "MULTIPLE FACES with identity matching blocked",
+      "observed": "MULTIPLE FACES; both faces were boxed as IDENTITY NOT CHECKED; liveness remained 0/8; no identity or attendance was produced",
+      "status": "passed",
+      "evidence": "screenshot reviewed during the guided session; screenshot not retained"
+    }
+  ],
+  "attendance_check": {
+    "observed": "the successful verification appeared in the attendance register for the local day",
+    "status": "passed",
+    "evidence": "operator attestation during the guided session"
+  },
+  "full_path_benchmark": {
+    "path": "reports/benchmarks/prototype_camera.json",
+    "sha256": "3aba6448e99bdcbed3453fe9293bc9d3b72613df548ccfa3644200f7df82c08c",
+    "identity_path_exercised": true,
+    "camera_released": true,
+    "read_failures": false
+  },
+  "privacy": {
+    "screenshots_retained": false,
+    "frames_retained": false,
+    "embeddings_retained": false,
+    "identity_names_recorded": false
+  },
+  "limitations": [
+    "This is one guided acceptance session on one laptop and camera, not a general performance or security guarantee.",
+    "Case B is supported by operator attestation rather than a retained screenshot.",
+    "Case C covers one phone-display presentation attack; printed photos, masks, replay variations, lighting changes and additional devices remain unevaluated.",
+    "Thresholds were not changed during the acceptance session."
+  ],
+  "overall_status": "passed"
+}

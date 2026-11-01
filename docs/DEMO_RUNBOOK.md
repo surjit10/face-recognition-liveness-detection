@@ -20,7 +20,7 @@ The face pack is not downloaded automatically. Install the supplied official
 
 ```bash
 .venv/bin/python scripts/install_insightface_pack.py \
-  --pack-zip data/processed/buffalo_m.zip \
+  --pack-zip /path/to/authorized/buffalo_m.zip \
   --model-root models/private/insightface \
   --acknowledge-non-commercial-model-terms
 ```

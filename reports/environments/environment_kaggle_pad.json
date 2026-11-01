@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "event": "recovered_kaggle_pad_environment",
+  "evidence_source": "reference/archive/final-submission-excluded/notebooks/03_kaggle_pad_training_executed.ipynb",
+  "evidence_sha256": "42ffe47cf05c4ec1051c70a682025be944355f694e3291da4c38a37d96533a72",
+  "run": {
+    "start": "2026-10-25T10:05:39.829100+00:00",
+    "end": "2026-10-25T12:34:10.549179+00:00",
+    "duration_seconds": 8910.720079,
+    "exception": null,
+    "internet_enabled": true
+  },
+  "software": {
+    "python": "3.13.15",
+    "pytorch": "2.11.0+cu128",
+    "torchvision": "not recorded",
+    "onnx": "installed during run; version not recorded",
+    "onnxscript": "installed during run; version not recorded",
+    "onnxruntime": "installed during run; version not recorded"
+  },
+  "accelerator": {
+    "cuda_available": true,
+    "gpu_count": 2,
+    "gpus": [
+      {
+        "index": 0,
+        "name": "Tesla T4",
+        "vram_gb": 14.56
+      },
+      {
+        "index": 1,
+        "name": "Tesla T4",
+        "vram_gb": 14.56
+      }
+    ],
+    "distributed_backend": "NCCL",
+    "world_size": 2
+  },
+  "kaggle": {
+    "source_type": "notebook",
+    "dataset_version_ids": [
+      2289782,
+      21212274
+    ]
+  },
+  "status": "partial",
+  "limitations": [
+    "The notebook installed ONNX packages during execution without recording their resolved versions.",
+    "No pre-install or post-install pip/package inventory was saved.",
+    "This recovered report is sufficient to identify the training hardware and core PyTorch runtime, but not to freeze the complete environment lock."
+  ]
+}

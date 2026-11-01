@@ -1,0 +1,29 @@
+schema_version: 1
+status: FROZEN
+scope: academic-prototype
+approved_by: user_authorization
+approved_at: "2026-11-01T11:30:00+05:30"
+target:
+  os: Linux 6.14.0-33 x86_64
+  cpu: Intel Core i5-10300H CPU @ 2.50GHz
+  logical_cpu_count: 8
+  ram_gb: 15.5
+  camera: USB2.0 HD UVC WebCam
+  camera_index: 0
+  capture_width: 640
+  capture_height: 480
+  reported_capture_fps: 30.0
+  provider: CPUExecutionProvider
+objectives:
+  minimum_processed_fps: 5.0
+  maximum_p95_capture_to_decision_ms: 500.0
+  maximum_peak_memory_mb: 750.0
+  maximum_stable_face_verification_seconds: 3.0
+  maximum_read_failures: 0
+  camera_released_on_shutdown: true
+  bounded_latest_frame_queue_size: 2
+  stale_frame_drops_allowed_if_reported: true
+notes:
+  - This objective is approved for a local supervised academic demonstration, not production access control.
+  - A fresh benchmark performed after approval is required for the pass/fail decision.
+  - PAD accuracy and recognition accuracy have separate evaluation gates and are not replaced by latency targets.

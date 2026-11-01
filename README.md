@@ -109,10 +109,16 @@ runner; the submission UI is launched locally with `scripts/run_app.py`.
 - Recognition evaluation is exploratory because session and device metadata are
   unavailable. The held-out unknown-person false-positive identification rate was
   5/280 searches (approximately 1.79%).
-- The PAD candidate's recorded test APCER is approximately 20.84%, and its dataset
-  permission/split provenance still requires independent verification.
-- Target-camera attack testing, full-path performance benchmarking with a face in view,
-  broader hardware validation, and model retraining are intentionally deferred.
+- The PAD candidate's recorded test APCER is approximately 20.84%. The official
+  CelebA-Spoof non-commercial terms and label mapping are documented, but the used
+  third-party Kaggle mirror reports an unknown license and the exact split CSVs were
+  not exported for independent verification. By explicit academic-scope approval,
+  reproducing this third-party online training run is deferred: the existing model is
+  an opaque frozen development baseline, and this project makes no training-
+  reproducibility, production, redistribution or certification claim.
+- One target-camera phone-display rejection and one full-path benchmark with a face in
+  view passed; broader attack, device, lighting and hardware validation and model
+  retraining remain deferred.
 - The supplied InsightFace model terms restrict the present prototype to applicable
   non-commercial research use.
 
@@ -127,5 +133,20 @@ These limitations are detailed in the
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — UI/runtime/storage architecture and
   frozen verification flow.
 - [`docs/PRIVACY.md`](docs/PRIVACY.md) — consent, retention, deletion, and private paths.
-- [`reference/tracking/STATUS.md`](reference/tracking/STATUS.md) — evidence-based project
-  tracker; completion percentages are not production-readiness claims.
+- [`docs/SUBMISSION_GUIDE.md`](docs/SUBMISSION_GUIDE.md) — professional repository map,
+  submission-safe file boundaries and final ZIP creation.
+
+## Build a submission-safe archive
+
+Do not submit the complete working directory because it contains local environments,
+private models/data and local experiment storage. Build the allowlisted archive instead:
+
+```bash
+.venv/bin/python scripts/scan_artifacts.py
+.venv/bin/python scripts/build_submission.py
+```
+
+The resulting `dist/faceguard-academic-submission.zip` contains source, tests,
+configuration, documentation and privacy-safe aggregate evidence plus a SHA-256 file
+manifest. Private biometric/model paths, local environments, MLflow storage and
+`reference/archive/` are excluded automatically.
