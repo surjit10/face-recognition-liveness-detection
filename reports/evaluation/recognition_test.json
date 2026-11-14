@@ -1,7 +1,18 @@
 {
+  "data_quality_gate": {
+    "applied_on": "2026-11-14",
+    "disclosure": "The defect was found during error analysis of the earlier test evaluation. The gate is the pre-existing runtime rule and was not tuned on test data; the threshold was re-selected on validation only and the test set was scored once afterwards.",
+    "exclusions_manifest": "data/manifests/recognition_quality_exclusions.csv",
+    "exclusions_manifest_sha256": "19699929b4291ee1df81afb5dc9cbcf1e3ae3f8172f56b99319190c64b511d6b",
+    "reason": "The original extraction accepted any single detected face; in crowded scenes this was sometimes a ~20 px background bystander instead of the subject.",
+    "rule": "faceguard.pipeline.face_quality_reason with the unchanged configs/runtime.yaml thresholds (detection >= 0.6, face side >= 80 px, brightness 40-215, Laplacian variance >= 40)",
+    "samples_excluded": 86
+  },
   "limitations": [
     "Exploratory unknown-session split; not an official benchmark.",
-    "Confidence intervals resample person identities, but sessions/devices are unknown."
+    "Confidence intervals resample person identities, but sessions/devices are unknown.",
+    "Known-person probes come from the same capture sitting as enrollment (202 of 205 identities with timestamped filenames were photographed within 5 minutes); this is not a cross-session result.",
+    "Identity pairs 0178/0231 and 0191/0218 appear to be the same people filed under two IDs (embedding similarity and visual check); labels were not changed."
   ],
   "metrics": {
     "confidence_intervals": {
@@ -10,32 +21,50 @@
         "lower_95": 0.0,
         "resamples": 2000,
         "seed": 42,
-        "upper_95": 0.04460966542750929
+        "upper_95": 0.0
       },
       "known_identification_failure_rate": {
         "cluster_unit": "pseudonymous person identity",
-        "lower_95": 0.0215633423180593,
+        "lower_95": 0.0,
         "resamples": 2000,
         "seed": 42,
-        "upper_95": 0.06353591160220995
+        "upper_95": 0.019886363636363636
       }
     },
-    "impostor_false_accepts": 5,
-    "impostor_false_positive_identification_rate": 0.017857142857142856,
-    "impostor_searches": 280,
-    "known_correct_accepts": 352,
-    "known_identification_failure_rate": 0.04087193460490468,
-    "known_misidentification_accept_rate": 0.008174386920980926,
-    "known_misidentification_accepts": 3,
-    "known_rejections": 12,
-    "known_searches": 367,
+    "impostor_false_accepts": 0,
+    "impostor_false_positive_identification_rate": 0.0,
+    "impostor_searches": 274,
+    "impostor_zero_event_upper_bound_95": {
+      "method": "exact one-sided Clopper-Pearson (approximately the rule of three, 3/n)",
+      "note": "0/274 false accepts bounds the rate below 1.09% at 95% confidence assuming independent searches; searches come from only 24 identities, so this bound is optimistic. The percentile bootstrap interval collapses to [0, 0] when no events occur and must not be read as a guarantee.",
+      "upper_95": 0.01087377784900223
+    },
+    "known_correct_accepts": 348,
+    "known_identification_failure_rate": 0.008547008547008517,
+    "known_misidentification_accept_rate": 0.0,
+    "known_misidentification_accepts": 0,
+    "known_rejections": 3,
+    "known_searches": 351,
     "min_top1_top2_margin": 0.0,
-    "threshold": 0.6713641881942749
+    "threshold": 0.6553505659103394
   },
   "official_benchmark": false,
   "protocol": "test",
   "schema_version": 1,
   "score_unit": "one gallery search per probe image",
-  "scores_sha256": "db88cbd36836c0b3b3c34c984dd2f971f74670152d77a4a175854933d2f68a18",
-  "threshold_report_sha256": "e7fb9a21287705a4a340b6b73617591cd2d98f0b3807bcca3133070d6f735705"
+  "scores_sha256": "4324e7dc8e6a062cd446f1c8f612c56c79b96cc1694f5fc63b7ce62f2cb4e11f",
+  "superseded_result": {
+    "note": "16 of the 20 earlier test errors involved bystander-face samples removed by the quality gate.",
+    "test": {
+      "impostor_false_accepts": "5/280",
+      "known_failures": "15/367",
+      "misidentifications": 3
+    },
+    "threshold": 0.6713641881942749,
+    "validation": {
+      "impostor_false_accepts": "0/265",
+      "known_failures": "12/367"
+    }
+  },
+  "threshold_report_sha256": "6e4ba2d76f90a3bc6a70907fd20c9a0353de962f6a6fb8a30517e5ae5ea90429"
 }

@@ -2,7 +2,12 @@ import numpy as np
 
 from faceguard.gallery import GalleryMatch
 from faceguard.models import EmbeddingObservation
-from faceguard.pipeline import PipelinePolicy, VerificationState, VideoVerifier
+from faceguard.pipeline import (
+    PipelinePolicy,
+    VerificationState,
+    VideoVerifier,
+    face_quality_reason,
+)
 
 
 class _Analyzer:
@@ -235,3 +240,83 @@ def test_enrollment_observation_reports_existing_quality_reason() -> None:
 
     assert observation.embedding is None
     assert observation.reason == "no_face"
+
+
+def _face(embedding: list[float], box=(20.0, 20.0, 80.0, 80.0)) -> EmbeddingObservation:
+    return EmbeddingObservation(1, np.asarray(embedding, dtype=np.float32), 0.99, box, None)
+
+
+def test_face_swapped_into_the_same_box_starts_a_new_track() -> None:
+    """Regression: liveness from one face must never be combined with another identity.
+
+    Before the fix, live frames of person A followed by a phone photo of person B held in
+    the same place passed the PAD median and returned B's identity from the photo frame.
+    """
+    policy = PipelinePolicy(**{**_policy().__dict__, "pad_min_observations": 3})
+    attacker, victim = [1.0, 0.0], [0.0, 1.0]
+    gallery = _Gallery()
+    verifier = VideoVerifier(
+        analyzer=_Analyzer(
+            [_face(attacker), _face(attacker), _face(victim, (22.0, 21.0, 82.0, 81.0))]
+        ),
+        pad_model=_Pad([0.95, 0.95, 0.05]),
+        gallery=gallery,  # type: ignore[arg-type]
+        policy=policy,
+        model_version="test",
+    )
+    first = verifier.process(_frame(), 1000.0)
+    verifier.process(_frame(), 1150.0)
+    swapped = verifier.process(_frame(), 1300.0)
+
+    assert swapped.status == "retry"
+    assert swapped.state == VerificationState.COLLECTING_PAD
+    assert swapped.track_id != first.track_id
+    assert swapped.pad_observations == 1
+    assert gallery.calls == 0
+
+
+def test_same_face_with_small_embedding_drift_keeps_its_track() -> None:
+    policy = PipelinePolicy(**{**_policy().__dict__, "pad_min_observations": 3})
+    gallery = _Gallery()
+    verifier = VideoVerifier(
+        analyzer=_Analyzer([_face([1.0, 0.0]), _face([0.95, 0.31]), _face([0.9, 0.44])]),
+        pad_model=_Pad([0.9, 0.9, 0.9]),
+        gallery=gallery,  # type: ignore[arg-type]
+        policy=policy,
+        model_version="test",
+    )
+    first = verifier.process(_frame(), 1000.0)
+    verifier.process(_frame(), 1150.0)
+    final = verifier.process(_frame(), 1300.0)
+
+    assert final.state == VerificationState.IDENTIFIED
+    assert final.track_id == first.track_id
+    assert gallery.calls == 1
+
+
+def test_face_swap_after_a_cached_decision_does_not_inherit_it() -> None:
+    gallery = _Gallery()
+    verifier = VideoVerifier(
+        analyzer=_Analyzer([_face([1.0, 0.0]), _face([1.0, 0.0]), _face([0.0, 1.0])]),
+        pad_model=_Pad([0.9, 0.9, 0.9]),
+        gallery=gallery,  # type: ignore[arg-type]
+        policy=_policy(),
+        model_version="test",
+    )
+    verifier.process(_frame(), 1000.0)
+    verified = verifier.process(_frame(), 1100.0)
+    assert verified.state == VerificationState.IDENTIFIED
+
+    swapped = verifier.process(_frame(), 1200.0)
+
+    assert swapped.person_id is None
+    assert swapped.state == VerificationState.COLLECTING_PAD
+    assert swapped.track_id != verified.track_id
+
+
+def test_shared_quality_gate_rejects_small_background_faces() -> None:
+    policy = PipelinePolicy(**{**_policy().__dict__, "min_face_size_px": 80})
+    frame = _frame()
+    assert face_quality_reason(frame, 0.99, (0.0, 0.0, 90.0, 90.0), policy) is None
+    assert face_quality_reason(frame, 0.99, (70.0, 70.0, 91.0, 92.0), policy) == "face_too_small"
+    assert face_quality_reason(frame, 0.51, (0.0, 0.0, 90.0, 90.0), policy) == "low_detection_score"

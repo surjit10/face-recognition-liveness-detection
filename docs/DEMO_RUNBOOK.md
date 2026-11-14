@@ -40,7 +40,7 @@ under `models/private/`. They are Git-ignored and are never recreated by the run
 
 Expected for the supplied baseline: exit code `0`, `"event": "runtime_ready"`,
 `"camera_opened": false`, every face provider is `CPUExecutionProvider`,
-`"gallery_vectors": 1430`, `"gallery_identities": 187`, and the printed face/PAD hashes match
+`"gallery_vectors": 1388`, `"gallery_identities": 186`, and the printed face/PAD hashes match
 `configs/runtime.yaml`. Any mismatch or hash error exits `2`; do not continue to the
 camera until it passes.
 

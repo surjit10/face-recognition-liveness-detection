@@ -18,6 +18,9 @@ utilities are archived under `reference/archive/final-submission-excluded/script
 - `benchmark_stages.py` — benchmark detector, PAD and recognition ONNX stages.
 - `log_mlflow.py` — log aggregate reports to the local MLflow store.
 - `preflight.py` — record Python, provider and package compatibility.
+- `apply_recognition_quality_gate.py` — apply the runtime face-quality gate to the
+  recognition split manifests and record every exclusion (needs the private embedding
+  metadata and images; see `docs/EVALUATION.md`).
 
 ## Release and submission
 

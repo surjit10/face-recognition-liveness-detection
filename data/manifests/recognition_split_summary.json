@@ -1,24 +1,24 @@
 {
   "counts": {
     "recognition_enrollment": {
-      "identities": 187,
-      "samples": 1430
+      "identities": 186,
+      "samples": 1388
     },
     "recognition_test_impostor": {
       "identities": 24,
-      "samples": 280
+      "samples": 274
     },
     "recognition_test_known": {
-      "identities": 187,
-      "samples": 367
+      "identities": 181,
+      "samples": 351
     },
     "recognition_val_impostor": {
       "identities": 23,
-      "samples": 265
+      "samples": 259
     },
     "recognition_val_known": {
-      "identities": 187,
-      "samples": 367
+      "identities": 181,
+      "samples": 351
     }
   },
   "device_id_policy": "unknown; empty field; never inferred from filenames",
@@ -67,7 +67,6 @@
       "0041",
       "0042",
       "0043",
-      "0044",
       "0045",
       "0047",
       "0049",
@@ -277,14 +276,15 @@
   "limitations": [
     "Exploratory protocol only; not an official FRAD benchmark.",
     "Known-person files are hash-disjoint, but cross-session independence cannot be claimed.",
-    "Validation and test impostor identities are disjoint from enrollment and each other."
+    "Validation and test impostor identities are disjoint from enrollment and each other.",
+    "The runtime quality gate removed 86 samples whose recorded detection was a small background face, low-confidence, or blurred; identity assignments were not changed."
   ],
   "manifest_sha256": {
-    "recognition_enrollment": "72352c7766c3b584801122a3c331f45a2470d089d51ba0fa839799c4755bd73d",
-    "recognition_test_impostor": "5c7da2c29d641bd955243236bc31ead7c030b557ece4514764c87bb58952d60c",
-    "recognition_test_known": "3c58954014f116f7f2b16c1736828891ed46f7af78026f91885bf126703ecae7",
-    "recognition_val_impostor": "53541b70e18f44e48681a3fd8be9401660b56d7d153e053bd9aca2c4167e3f83",
-    "recognition_val_known": "e48f0cf7368205fc8bcfc3c2a02f6db42d6bf16c6fcd06f0da42a11dfafd420f"
+    "recognition_enrollment": "9768fc5d2725d5bf3a06f01141f7d76718cd3d10932976369eef39b08c20b158",
+    "recognition_test_impostor": "9270142fd37659eba034dd11e018be4144e21d78b860045a0d1120f22eaef912",
+    "recognition_test_known": "f920f5efda38ec962b9221e855e28ec018ff07b7ce5b0fbf42943efa6e200dfc",
+    "recognition_val_impostor": "de0acfc38e057bed3371274065b8ed2aa96d466f108a79875a4e33ffc6254ec0",
+    "recognition_val_known": "7cf81789e9410796741119e97385cb1448d2da6626a89567e41a3b9079ac3a03"
   },
   "official_benchmark": false,
   "parameters": {
@@ -294,6 +294,24 @@
     "unknown_identity_fraction": 0.2
   },
   "protocol": "exploratory_unknown_session_open_set_v1",
+  "quality_gate": {
+    "applied_on": "2026-11-14",
+    "exclusions_manifest": "data/manifests/recognition_quality_exclusions.csv",
+    "exclusions_manifest_sha256": "19699929b4291ee1df81afb5dc9cbcf1e3ae3f8172f56b99319190c64b511d6b",
+    "identities_without_remaining_samples": [
+      "0044"
+    ],
+    "identity_assignment_changed": false,
+    "pre_quality_gate_manifest_sha256": {
+      "recognition_enrollment": "72352c7766c3b584801122a3c331f45a2470d089d51ba0fa839799c4755bd73d",
+      "recognition_test_impostor": "5c7da2c29d641bd955243236bc31ead7c030b557ece4514764c87bb58952d60c",
+      "recognition_test_known": "3c58954014f116f7f2b16c1736828891ed46f7af78026f91885bf126703ecae7",
+      "recognition_val_impostor": "53541b70e18f44e48681a3fd8be9401660b56d7d153e053bd9aca2c4167e3f83",
+      "recognition_val_known": "e48f0cf7368205fc8bcfc3c2a02f6db42d6bf16c6fcd06f0da42a11dfafd420f"
+    },
+    "rule": "faceguard.pipeline.face_quality_reason with configs/runtime.yaml thresholds",
+    "samples_excluded": 86
+  },
   "schema_version": 1,
   "seed": 42,
   "session_id_policy": "unknown; empty field; never inferred from filenames",

@@ -79,7 +79,7 @@ def run_checks(
     if scope == "production-security":
         raise PromotionError(
             "Promotion to 'production-security' is blocked: PAD generalization error (~20.8%) "
-            "and open-set FPIR (1.79%) do not meet production access-control requirements. "
+            "and same-session, small-gallery recognition evidence do not meet production access-control requirements. "
             "Use '--scope academic-prototype' for authorized prototype demonstrations."
         )
 
@@ -113,7 +113,7 @@ def record_promotion(
         "limitations": [
             "Academic prototype demonstration only; not certified for security access control.",
             "PAD model is an RGB single-frame classifier; presentation attack error is ~20.8%.",
-            "Open-set recognition exploratory FPIR was 1.79% (5/280 searches).",
+            "Open-set recognition test: 0/274 stranger false accepts (95% upper bound 1.09%), same-session data only.",
         ],
     }
 

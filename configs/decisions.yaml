@@ -1,6 +1,6 @@
 schema_version: 1
 project_id: faceguard-ai-v2
-last_updated: "2026-11-01T12:00:00+05:30"
+last_updated: "2026-11-14T16:00:00+05:30"
 allowed_states: [UNRESOLVED, DISCOVERED, VERIFIED, FROZEN]
 decisions:
   - id: PROTOTYPE_SCOPE
@@ -26,7 +26,7 @@ decisions:
       - models/private/insightface
       - models/private/pad_candidate/mobilenetv3_pad.onnx
       - models/private/gallery/gallery.npz
-    notes: "Prototype scope frozen: InsightFace buffalo_m, MobileNetV3 PAD, and 187-identity gallery are the final baseline. On 1 November 2026 the user explicitly removed recovery/reproduction of third-party online PAD training evidence from the academic deliverable; missing P2 gates remain blocked and unsupported production claims remain prohibited."
+    notes: "Prototype scope frozen: InsightFace buffalo_m, MobileNetV3 PAD, and the quality-gated 186-identity gallery (14 November 2026; see RECOGNITION_QUALITY_GATE) are the final baseline. On 1 November 2026 the user explicitly removed recovery/reproduction of third-party online PAD training evidence from the academic deliverable; missing P2 gates remain blocked and unsupported production claims remain prohibited."
   - id: PAD_REPRODUCIBILITY_SCOPE
     state: FROZEN
     value:
@@ -124,16 +124,17 @@ decisions:
       official_benchmark: false
       seed: 42
       identities_total: 234
-      identities_enrolled: 187
+      identities_enrolled: 186
       identities_validation_impostor: 23
       identities_test_impostor: 24
-      samples_total: 2709
+      samples_total: 2623
+      samples_before_quality_gate: 2709
       manifest_sha256:
-        enrollment: 72352c7766c3b584801122a3c331f45a2470d089d51ba0fa839799c4755bd73d
-        validation_known: e48f0cf7368205fc8bcfc3c2a02f6db42d6bf16c6fcd06f0da42a11dfafd420f
-        validation_impostor: 53541b70e18f44e48681a3fd8be9401660b56d7d153e053bd9aca2c4167e3f83
-        test_known: 3c58954014f116f7f2b16c1736828891ed46f7af78026f91885bf126703ecae7
-        test_impostor: 5c7da2c29d641bd955243236bc31ead7c030b557ece4514764c87bb58952d60c
+        enrollment: 9768fc5d2725d5bf3a06f01141f7d76718cd3d10932976369eef39b08c20b158
+        validation_known: 7cf81789e9410796741119e97385cb1448d2da6626a89567e41a3b9079ac3a03
+        validation_impostor: de0acfc38e057bed3371274065b8ed2aa96d466f108a79875a4e33ffc6254ec0
+        test_known: f920f5efda38ec962b9221e855e28ec018ff07b7ce5b0fbf42943efa6e200dfc
+        test_impostor: 9270142fd37659eba034dd11e018be4144e21d78b860045a0d1120f22eaef912
     evidence:
       - data/manifests/recognition_split_summary.json
       - reports/audits/recognition_split_validation.json
@@ -145,7 +146,7 @@ decisions:
       - data/manifests/recognition_val_impostor.csv
       - data/manifests/recognition_test_known.csv
       - data/manifests/recognition_test_impostor.csv
-    notes: "All 234 labels are preserved, including 000. Files are hash-disjoint; unknown identity cohorts are person-disjoint."
+    notes: "All 234 labels are preserved, including 000. Files are hash-disjoint; unknown identity cohorts are person-disjoint. On 14 November 2026 the runtime quality gate removed 86 samples (RECOGNITION_QUALITY_GATE); identity 0044 has no remaining sample. Identity assignments were not changed."
   - id: PAD_DATASET_PERMISSION
     state: DISCOVERED
     value:
@@ -298,19 +299,56 @@ decisions:
       scoring: maximum_individual_embedding_cosine_per_person
       policy: recognition_fmr_bound
       validation_max_fmr: 0.0
-      threshold: 0.6713641881942749
+      threshold: 0.6553505659103394
       min_top1_top2_margin: 0.0
-      threshold_report_sha256: e7fb9a21287705a4a340b6b73617591cd2d98f0b3807bcca3133070d6f735705
+      threshold_report_sha256: 6e4ba2d76f90a3bc6a70907fd20c9a0353de962f6a6fb8a30517e5ae5ea90429
+      superseded_threshold: 0.6713641881942749
     evidence:
       - reports/evaluation/recognition_threshold.json
       - reports/evaluation/recognition_validation.json
       - reports/evaluation/recognition_test.json
     decided_by: validation_only_calibration
-    decided_at: "2026-10-25T18:47:00+05:30"
+    decided_at: "2026-11-14T16:00:00+05:30"
     applies_to:
       - models/private/gallery/gallery.npz
       - configs/runtime.yaml
-    notes: "Exploratory setting only. Test FPIR was 5/280 searches (1.79%); do not claim a production security guarantee."
+    notes: "Re-selected on validation only after RECOGNITION_QUALITY_GATE; the test set was scored once afterwards. Test: 348/351 known correct, 0 misidentifications, 0/274 impostor false accepts (one-sided 95% upper bound 1.09%, from 24 identities). Same-session data; exploratory setting only; do not claim a production security guarantee. Superseded result: 5/280 impostor false accepts at 0.6713641881942749, mostly caused by bystander-face samples."
+  - id: RECOGNITION_QUALITY_GATE
+    state: FROZEN
+    value:
+      rule: faceguard.pipeline.face_quality_reason
+      thresholds_source: configs/runtime.yaml
+      samples_excluded: 86
+      exclusions_manifest: data/manifests/recognition_quality_exclusions.csv
+      tuned_on_test_data: false
+    evidence:
+      - scripts/apply_recognition_quality_gate.py
+      - data/manifests/recognition_quality_exclusions.csv
+      - data/manifests/recognition_split_summary.json
+    decided_by: error_analysis_and_user_authorization
+    decided_at: "2026-11-14T16:00:00+05:30"
+    applies_to:
+      - data/manifests/recognition_enrollment.csv
+      - data/manifests/recognition_val_known.csv
+      - data/manifests/recognition_val_impostor.csv
+      - data/manifests/recognition_test_known.csv
+      - data/manifests/recognition_test_impostor.csv
+      - models/private/gallery/gallery.npz
+    notes: "The offline extraction accepted any single detected face, so small background bystanders (about 20 px, detection about 0.5) entered the gallery and probe sets. The same gate the live application enforces is now applied offline. Found during error analysis of the earlier test evaluation and disclosed in docs/EVALUATION.md."
+  - id: TRACK_IDENTITY_BINDING
+    state: FROZEN
+    value:
+      min_track_embedding_similarity: 0.5
+      reference: first embedding of the track
+      on_failure: start_new_track_and_discard_pad_evidence
+    evidence:
+      - src/faceguard/pipeline.py
+      - tests/unit/test_pipeline.py
+    decided_by: security_review_and_user_authorization
+    decided_at: "2026-11-14T16:00:00+05:30"
+    applies_to:
+      - configs/runtime.yaml
+    notes: "Box overlap alone allowed live frames of one face to supply PAD evidence while a photo of another face supplied the identity. Value chosen from enrollment and validation pairs only: 0.0126% of different-person pairs reach 0.5 while 97.6% of same-person photo pairs (with deliberate pose and accessory changes) exceed it. A live camera re-acceptance is required."
   - id: TARGET_HARDWARE
     state: FROZEN
     value:

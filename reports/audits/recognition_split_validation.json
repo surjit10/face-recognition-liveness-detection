@@ -1,13 +1,15 @@
 {
   "counts": {
-    "enrollment": 1430,
-    "test_impostor": 280,
-    "test_known": 367,
-    "val_impostor": 265,
-    "val_known": 367
+    "enrollment": 1388,
+    "test_impostor": 274,
+    "test_known": 351,
+    "val_impostor": 259,
+    "val_known": 351
   },
-  "enrollment_identities": 187,
+  "enrollment_identities": 186,
+  "quality_gate_exclusions_manifest": "data/manifests/recognition_quality_exclusions.csv",
+  "quality_gate_samples_excluded": 86,
   "schema_version": 1,
-  "total_samples": 2709,
+  "total_samples": 2623,
   "unknown_session_metadata_allowed": true
 }

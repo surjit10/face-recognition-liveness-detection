@@ -1,6 +1,6 @@
 {
   "camera_opened": false,
-  "created_at": "2026-11-01T05:38:18.776239+00:00",
+  "created_at": "2026-11-14T10:02:23.343136+00:00",
   "event": "runtime_ready",
   "face_pack": "buffalo_m",
   "face_runtime_providers": {
@@ -11,8 +11,8 @@
       "CPUExecutionProvider"
     ]
   },
-  "gallery_identities": 187,
-  "gallery_vectors": 1430,
+  "gallery_identities": 186,
+  "gallery_vectors": 1388,
   "pad_model_sha256": "bd8bcc251df7b09285893f51dc35a3f7bd3d6e78c4be5641f49a4130f30e1359",
   "providers": [
     "CPUExecutionProvider"

@@ -15,8 +15,20 @@ def test_frozen_exploratory_runtime_config_parses() -> None:
         PROJECT_ROOT / "configs/runtime.yaml", project_root=PROJECT_ROOT
     )
     assert config.pipeline_policy.recognition_threshold == pytest.approx(
-        0.6713641881942749
+        0.6553505659103394
     )
+    assert config.pipeline_policy.min_track_embedding_similarity == pytest.approx(0.5)
+
+
+def test_runtime_config_requires_track_identity_similarity(tmp_path: Path) -> None:
+    document = yaml.safe_load(
+        (PROJECT_ROOT / "configs/runtime.yaml").read_text(encoding="utf-8")
+    )
+    del document["runtime"]["min_track_embedding_similarity"]
+    path = tmp_path / "runtime.yaml"
+    path.write_text(yaml.safe_dump(document), encoding="utf-8")
+    with pytest.raises(ConfigurationError, match="min_track_embedding_similarity"):
+        load_runtime_config(path, project_root=PROJECT_ROOT)
 
 
 def test_runtime_config_blocks_unresolved_recognition_values(tmp_path: Path) -> None:

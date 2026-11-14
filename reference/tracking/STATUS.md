@@ -31,8 +31,8 @@ This percentage measures verified implementation tasks, not effort, elapsed time
 8. The user confirmed the folder images are genuine bona-fide images of that person.
 9. A seed-42 exploratory protocol preserves all 234 labels and validates all 2,709 usable samples without file-hash leakage.
 10. Session/device values are explicitly frozen as unknown; no cross-session claim is permitted.
-11. A private gallery contains 1,430 enrollment vectors for 187 identities.
-12. Validation-only calibration selected cosine threshold `0.6713641882`; the held-out exploratory test observed 5/280 unknown-person false accepts.
+11. A private gallery contains 1,388 quality-gated enrollment vectors for 186 identities (1,430/187 before the 14 November 2026 quality gate).
+12. After the 14 November 2026 quality gate (bystander-face samples removed with the runtime rule), validation-only calibration selected cosine threshold `0.6553505659`; the held-out exploratory test observed 0/274 unknown-person false accepts and 3/351 known failures (superseded: `0.6713641882`, 5/280).
 13. The official `buffalo_m` ZIP and extracted SCRFD/ArcFace files match their frozen SHA-256 values.
 14. The complete CPU runtime loaded without a camera and a fresh private enrollment-image query returned the expected identity.
 15. Camera automatic reconnect with clean shutdown, bounded retries and verification state invalidation (`scripts/run_demo.py`, `tests/unit/test_camera_reconnect.py`).
@@ -103,7 +103,7 @@ Private-CI execution remains the only incomplete non-PAD implementation-evidence
 
 | Blocker | Why it matters | Resolution required |
 |---|---|---|
-| Recognition generalization | Exploratory test FPIR is 1.79% (5/280 searches) | Collect stronger unknown/session-separated validation data before production claims |
+| Recognition generalization | Exploratory same-session test FPIR is 0/274 (95% upper bound 1.09%, 24 identities) | Collect stronger unknown/session-separated validation data before production claims |
 | PAD generalization | Test APCER is approximately 20.84% | Evaluate target-camera attack videos and retrain if the declared bound is not met |
 | PAD reproducibility | Manifest hashes and run outputs exist, but exact CSVs, score artifacts and complete Kaggle package versions were not exported | Deferred outside the academic prototype; recover or rerun only if reproducibility or production scope is reopened |
 | PAD distribution provenance | Official terms allow non-commercial research, but the used Kaggle mirror labels its license `Unknown` | Academic local use only; never redistribute the mirror or derived content, and resolve authorization before broader use |

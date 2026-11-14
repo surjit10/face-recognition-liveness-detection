@@ -9,12 +9,12 @@ implemented runtime, not a production security architecture.
 ```mermaid
 flowchart LR
     A[Camera frame<br/>index 0] --> B[SCRFD detector<br/>exactly one face]
-    B --> C[Quality and continuity gate<br/>size, exposure, blur, IoU]
+    B --> C[Quality and continuity gate<br/>size, exposure, blur,<br/>IoU + same-face embedding]
     C --> D[Temporal PAD<br/>MobileNetV3, 8 observations]
     D -->|median below threshold| E[LIVENESS NOT CONFIRMED]
     D -->|median passes| F[ArcFace 512-d embedding]
     F --> G[Gallery cosine search<br/>vectorized matrix @ query]
-    G -->|score and margin pass| H[VERIFIED: pseudonymous ID]
+    G -->|top-1 score ≥ threshold, no exact tie| H[VERIFIED: pseudonymous ID]
     G -->|otherwise| I[UNKNOWN]
     B -->|zero faces| J[NO FACE]
     B -->|two or more faces| K[MULTIPLE FACES]
@@ -70,9 +70,14 @@ When configured, protected navigation requires local session unlock; the operato
 relock without closing the application. This is a demonstration access gate, not a
 replacement for operating-system account security.
 
-Identity matching is never executed until PAD evidence has passed. The recognition
-stage receives an embedding that was already computed for the same single detected
-face, so it cannot produce an identity on a frame that PAD rejected.
+Identity matching is never executed until PAD evidence has passed. PAD evidence and
+the identity decision are bound to the same face: every frame in a track must match the
+track's first face embedding (cosine ≥ `min_track_embedding_similarity`, 0.5) as well
+as overlap its box. If a different face appears in the same place, for example a phone
+photo raised where a live face was, the PAD evidence is discarded and a new track
+starts. Before 14 November 2026 only box overlap was checked. Live frames of one person
+could then supply the PAD median while a photo of another person in the final frame
+supplied the identity (see [EVALUATION.md](EVALUATION.md)).
 
 ## Stages
 
@@ -80,11 +85,11 @@ face, so it cannot produce an identity on a frame that PAD rejected.
 |---|---|---|
 | Capture | `src/faceguard/session.py`, `scripts/run_demo.py` | Camera `0` only. A bounded latest-frame queue drops the oldest waiting frame; processing delay cannot grow without bound. |
 | Detection | `InsightFaceEmbedder` with `buffalo_m` SCRFD `det_2.5g.onnx` | Exactly one detected face; zero or multiple faces reset the track and fail closed. |
-| Quality gate | `VideoVerifier._quality_reason` | Detection score ≥ `0.6`, face box ≥ `80 px`, mean brightness in `[40, 215]`, Laplacian variance ≥ `40`. Failures produce a retry state. |
-| Continuity | `VideoVerifier` IoU track | The same face must overlap the previous box with IoU ≥ `0.3` within `500 ms`; otherwise the PAD evidence is reset and a new track starts. |
+| Quality gate | `face_quality_reason` (shared) | Detection score ≥ `0.6`, face box ≥ `80 px`, mean brightness in `[40, 215]`, Laplacian variance ≥ `40`. Failures produce a retry state. The same function filters the offline gallery and evaluation data, so offline and live data obey one rule. |
+| Continuity | `VideoVerifier` track | The face must overlap the previous box with IoU ≥ `0.3` within `500 ms` **and** its ArcFace embedding must have cosine ≥ `0.5` with the track's first face; otherwise the PAD evidence is reset and a new track starts. |
 | PAD | `OnnxPadModel` with `mobilenetv3_pad.onnx` | 1.3× face crop, 224×224 RGB, ImageNet normalization, sigmoid liveness score. The median of 8 consecutive observations must be ≥ `0.7626009583473206`. |
-| Embedding | ArcFace `w600k_r50.onnx` | L2-normalized 512-dimensional vector. |
-| Gallery search | `Gallery.rank`/`search` | One matrix-vector product per query, then a per-identity maximum. The top-1 cosine score must be ≥ `0.6713641881942749`; the top-1/top-2 margin must be ≥ `0.0`; exact ties are rejected. |
+| Embedding | ArcFace `w600k_r50.onnx` | L2-normalized 512-dimensional vector, computed on every frame for the identity-continuity check; only the decision frame's embedding is searched in the gallery. |
+| Gallery search | `Gallery.rank`/`search` | One matrix-vector product per query, then a per-identity maximum. The top-1 cosine score must be ≥ `0.6553505659103394`; the configured top-1/top-2 margin is `0.0`, so in practice only exact ties are rejected. |
 | Output | `VerificationResult.event` | Status, state, pseudonymous ID (only after PAD), one decision score, PAD score, PAD observation count, track ID, model version, reason and latency. No frame, crop, bounding box or embedding. |
 
 ## Runtime states and operator overlay

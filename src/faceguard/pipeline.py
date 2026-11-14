@@ -50,6 +50,11 @@ class PipelinePolicy:
     min_blur_variance: float
     min_mean_brightness: float
     max_mean_brightness: float
+    # Every frame in a track must show the same face as the track's first frame.
+    # Box overlap alone cannot detect a face being swapped (e.g. a phone photo held
+    # where the live face was), so PAD evidence and the identity decision would
+    # otherwise come from different faces.
+    min_track_embedding_similarity: float = 0.5
 
     def validate(self) -> None:
         bounded = {
@@ -57,6 +62,7 @@ class PipelinePolicy:
             "recognition_threshold": self.recognition_threshold,
             "min_iou": self.min_iou,
             "min_detection_score": self.min_detection_score,
+            "min_track_embedding_similarity": self.min_track_embedding_similarity,
         }
         for name, value in bounded.items():
             if not np.isfinite(value) or not 0.0 <= value <= 1.0:
@@ -110,6 +116,50 @@ class EnrollmentObservation:
     reason: str | None
 
 
+def face_quality_reason(
+    frame_bgr: np.ndarray,
+    detection_score: float | None,
+    bbox_xyxy: tuple[float, float, float, float] | None,
+    policy: PipelinePolicy,
+) -> str | None:
+    """Return why a detected face fails the quality gate, or ``None`` if it passes.
+
+    This single function is used by the live verifier, live enrollment and the offline
+    gallery/evaluation quality filter, so all three apply exactly the same rule.
+    """
+    if detection_score is None or detection_score < policy.min_detection_score:
+        return "low_detection_score"
+    if bbox_xyxy is None:
+        return "missing_face_box"
+    x1, y1, x2, y2 = bbox_xyxy
+    if min(x2 - x1, y2 - y1) < policy.min_face_size_px:
+        return "face_too_small"
+    height, width = frame_bgr.shape[:2]
+    ix1, iy1 = max(0, math.floor(x1)), max(0, math.floor(y1))
+    ix2, iy2 = min(width, math.ceil(x2)), min(height, math.ceil(y2))
+    crop = frame_bgr[iy1:iy2, ix1:ix2]
+    if crop.size == 0:
+        return "empty_face_crop"
+    gray = cv2.cvtColor(crop, cv2.COLOR_BGR2GRAY)
+    brightness = float(np.mean(gray))
+    if not policy.min_mean_brightness <= brightness <= policy.max_mean_brightness:
+        return "exposure_out_of_range"
+    blur = float(cv2.Laplacian(gray, cv2.CV_64F).var())
+    if blur < policy.min_blur_variance:
+        return "face_too_blurry"
+    return None
+
+
+def embedding_cosine(left: np.ndarray, right: np.ndarray) -> float:
+    """Cosine similarity of two embeddings (inputs need not be pre-normalized)."""
+    a = np.asarray(left, dtype=np.float64).reshape(-1)
+    b = np.asarray(right, dtype=np.float64).reshape(-1)
+    denominator = float(np.linalg.norm(a) * np.linalg.norm(b))
+    if a.shape != b.shape or not np.isfinite(denominator) or denominator <= 1e-12:
+        return -1.0
+    return float(np.dot(a, b) / denominator)
+
+
 def bbox_iou(
     left: tuple[float, float, float, float],
     right: tuple[float, float, float, float],
@@ -154,6 +204,7 @@ class VideoVerifier:
         self._state = VerificationState.EMPTY
         self._track_id: int | None = None
         self._bbox: tuple[float, float, float, float] | None = None
+        self._anchor_embedding: np.ndarray | None = None
         self._last_timestamp_ms: float | None = None
         self._pad_scores: list[float] = []
         self._face_boxes: tuple[tuple[float, float, float, float], ...] = ()
@@ -216,29 +267,9 @@ class VideoVerifier:
         frame_bgr: np.ndarray,
         observation: EmbeddingObservation,
     ) -> str | None:
-        if observation.detection_score is None or (
-            observation.detection_score < self.policy.min_detection_score
-        ):
-            return "low_detection_score"
-        if observation.bbox_xyxy is None:
-            return "missing_face_box"
-        x1, y1, x2, y2 = observation.bbox_xyxy
-        if min(x2 - x1, y2 - y1) < self.policy.min_face_size_px:
-            return "face_too_small"
-        height, width = frame_bgr.shape[:2]
-        ix1, iy1 = max(0, math.floor(x1)), max(0, math.floor(y1))
-        ix2, iy2 = min(width, math.ceil(x2)), min(height, math.ceil(y2))
-        crop = frame_bgr[iy1:iy2, ix1:ix2]
-        if crop.size == 0:
-            return "empty_face_crop"
-        gray = cv2.cvtColor(crop, cv2.COLOR_BGR2GRAY)
-        brightness = float(np.mean(gray))
-        if not self.policy.min_mean_brightness <= brightness <= self.policy.max_mean_brightness:
-            return "exposure_out_of_range"
-        blur = float(cv2.Laplacian(gray, cv2.CV_64F).var())
-        if blur < self.policy.min_blur_variance:
-            return "face_too_blurry"
-        return None
+        return face_quality_reason(
+            frame_bgr, observation.detection_score, observation.bbox_xyxy, self.policy
+        )
 
     def enrollment_observation(self, frame_bgr: np.ndarray) -> EnrollmentObservation:
         """Extract one enrollment vector using the frozen face and quality pipeline."""
@@ -311,15 +342,19 @@ class VideoVerifier:
 
         continuing = (
             self._bbox is not None
+            and self._anchor_embedding is not None
             and self._last_timestamp_ms is not None
             and timestamp_ms - self._last_timestamp_ms <= self.policy.max_track_gap_ms
             and bbox_iou(self._bbox, observation.bbox_xyxy) >= self.policy.min_iou
+            and embedding_cosine(self._anchor_embedding, observation.embedding)
+            >= self.policy.min_track_embedding_similarity
         )
         if not continuing:
             self.reset()
             self._track_id = self._next_track_id
             self._next_track_id += 1
             self._state = VerificationState.COLLECTING_PAD
+            self._anchor_embedding = np.array(observation.embedding, dtype=np.float32)
         self._bbox = observation.bbox_xyxy
         self._face_boxes = observed_boxes
         self._last_timestamp_ms = float(timestamp_ms)

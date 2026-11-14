@@ -6,7 +6,7 @@
     },
     "gallery": {
       "relative_path": "models/private/gallery/gallery.npz",
-      "sha256": "1cfa5694135edefe768b0c929b72f7b1127d68f885194c633e9c91eeceed7465"
+      "sha256": "31ceacdbc90dbccdff8bc7477ce83bd8f56c306c05dfd4440f89141136463edc"
     },
     "pad_onnx": {
       "relative_path": "models/private/pad_candidate/mobilenetv3_pad.onnx",
@@ -20,7 +20,7 @@
   "configuration": {
     "face": {
       "min_top1_top2_margin": 0.0,
-      "threshold": 0.6713641881942749
+      "threshold": 0.6553505659103394
     },
     "pad": {
       "crop_scale": 1.3,
@@ -50,109 +50,51 @@
       "min_face_size_px": 80,
       "min_iou": 0.3,
       "min_mean_brightness": 40.0,
+      "min_track_embedding_similarity": 0.5,
       "pad_min_observations": 8
     }
   },
-  "created_at": "2026-11-01T05:38:20.224869+00:00",
+  "created_at": "2026-11-14T10:03:19.837558+00:00",
   "environment": {
     "python": "3.12.3",
     "runtime_lock_sha256": "2e03c24b6fbe909d03b1829c103da5c967bfcf948575123aae0c15ffb68891a3"
   },
   "git": {
     "clean": false,
-    "commit": "cf3e7d38512f65df1f92d7bbaa1ac56fbe0dfdca",
+    "commit": "03e9b941083f7a535e434d639d372384bd5afc77",
     "uncommitted_files": [
-      "M .dvcignore",
       "M README.md",
-      "M configs/README.md",
       "M configs/decisions.yaml",
-      "M data/README.md",
-      "D data/manifests/frad_context_crops_v2.csv",
-      "D data/manifests/frad_context_inventory.csv",
-      "D data/manifests/frad_context_subjects.csv",
-      "D data/manifests/frad_primary_face_crops_v3.csv",
-      "D data/manifests/templates/README.md",
-      "D data/manifests/templates/recognition_enrollment.csv",
-      "D data/manifests/templates/recognition_test_impostor.csv",
-      "D data/manifests/templates/recognition_test_known.csv",
-      "D data/manifests/templates/recognition_val_impostor.csv",
-      "D data/manifests/templates/recognition_val_known.csv",
-      "D data/manifests/templates/recognition_validation_scores.csv",
+      "M configs/runtime.yaml",
+      "M data/manifests/recognition_enrollment.csv",
+      "M data/manifests/recognition_split_summary.json",
+      "M data/manifests/recognition_test_impostor.csv",
+      "M data/manifests/recognition_test_known.csv",
+      "M data/manifests/recognition_val_impostor.csv",
+      "M data/manifests/recognition_val_known.csv",
+      "M docs/ARCHITECTURE.md",
       "M docs/DEMO_RUNBOOK.md",
-      "D docs/EMBEDDING_EXTRACTION.md",
       "M docs/EVALUATION.md",
-      "D docs/KAGGLE_EMBEDDING_RUNBOOK.md",
-      "M docs/MLOPS.md",
       "M docs/PROTOTYPE_MODEL_CARD.md",
-      "M docs/README.md",
-      "D docs/RUNTIME_PIPELINE.md",
-      "M dvc.lock",
-      "M models/README.md",
-      "D notebooks/02_kaggle_frad_embeddings.ipynb",
-      "D notebooks/03_kaggle_pad_training.ipynb",
-      "D notebooks/README.md",
-      "D reference/1-reference.md",
-      "D reference/2-referece.md",
-      "M reference/FaceGuard_AI_Implementation_Blueprint.md",
-      "M reference/README.md",
       "M reference/tracking/STATUS.md",
-      "M reference/tracking/progress.yaml",
-      "M reports/README.md",
-      "D reports/audits/.gitkeep",
-      "D reports/audits/frad_context_audit.json",
-      "D reports/audits/frad_context_crops_v2.json",
-      "M reports/audits/frad_identity_confirmation.json",
-      "D reports/audits/frad_primary_face_crops_v3.json",
-      "D reports/benchmarks/.gitkeep",
-      "M reports/benchmarks/prototype_camera.json",
-      "D reports/environments/.gitkeep",
-      "D reports/environments/environment_local_before.json",
-      "D reports/environments/environment_local_runtime.json",
+      "M reports/audits/recognition_split_validation.json",
       "M reports/environments/runtime_readiness.json",
-      "D reports/evaluation/.gitkeep",
-      "D reports/phase_receipts/.gitkeep",
-      "M reports/phase_receipts/artifact_scan.txt",
-      "D reports/phase_receipts/promotion_faceguard-v2-development.json",
+      "M reports/evaluation/recognition_test.json",
+      "M reports/evaluation/recognition_threshold.json",
+      "M reports/evaluation/recognition_validation.json",
+      "M reports/mlops_dashboard.html",
+      "M reports/phase_receipts/mlflow_latest.json",
       "M reports/release_manifest.json",
-      "D requirements-kaggle.in",
-      "M scripts/README.md",
-      "D scripts/audit_data.py",
-      "M scripts/benchmark_runtime.py",
-      "D scripts/build_gallery.py",
-      "D scripts/build_kaggle_bundle.py",
-      "D scripts/build_pad_notebook.py",
-      "D scripts/calibrate_recognition.py",
-      "D scripts/create_recognition_split.py",
-      "D scripts/evaluate_recognition.py",
-      "D scripts/extract_gallery.py",
-      "D scripts/inspect_model_pack.py",
-      "M scripts/log_mlflow.py",
-      "D scripts/prepare_celeba_spoof.py",
-      "D scripts/prepare_recognition_context.py",
-      "D scripts/prepare_runtime_artifacts.py",
-      "D scripts/report_recognition.py",
-      "D scripts/test_pad.py",
-      "D scripts/train_pad.py",
-      "D scripts/validate_recognition_manifests.py",
-      "M tests/README.md",
-      "D tests/contract/.gitkeep",
-      "D tests/fixtures/.gitkeep",
-      "D tests/integration/.gitkeep",
-      "D tests/privacy/.gitkeep",
-      "D tests/unit/.gitkeep",
-      "?? configs/performance_objective.yaml",
-      "?? docs/PUBLICATION_POLICY.md",
-      "?? docs/SUBMISSION_GUIDE.md",
-      "?? reports/audits/pad_training_evidence.json",
-      "?? reports/benchmarks/model_stages_cpu.json",
-      "?? reports/environments/environment_kaggle_pad.json",
-      "?? reports/phase_receipts/camera_acceptance_2026-11-01.json",
-      "?? reports/phase_receipts/mlflow_latest.json",
-      "?? reports/phase_receipts/performance_gate_2026-11-01.json",
-      "?? scripts/benchmark_stages.py",
-      "?? scripts/build_submission.py",
-      "?? tests/unit/test_benchmark_runtime.py",
-      "?? tests/unit/test_build_submission.py"
+      "M scripts/promote_release.py",
+      "M src/faceguard/pipeline.py",
+      "M src/faceguard/runtime_config.py",
+      "M tests/unit/test_manage_release.py",
+      "M tests/unit/test_pipeline.py",
+      "M tests/unit/test_promote_release.py",
+      "M tests/unit/test_runtime_config.py",
+      "?? data/manifests/recognition_quality_exclusions.csv",
+      "?? scripts/apply_recognition_quality_gate.py",
+      "?? tests/unit/test_apply_recognition_quality_gate.py"
     ]
   },
   "release_id": "faceguard-v2-development",
@@ -163,19 +105,19 @@
     },
     "readiness": {
       "relative_path": "reports/environments/runtime_readiness.json",
-      "sha256": "1c396ec4ba6587774e019ceb1e58681fd085abebee37c10f2c79765cf29a4644"
+      "sha256": "de772f0bd4cf2e242e5395a27e10597770121a70895bcfae2131873f0f7be14f"
     },
     "recognition_test": {
       "relative_path": "reports/evaluation/recognition_test.json",
-      "sha256": "8bfe75082f684941f8eecb102763f4ec754d41dc5067832365dbc1f8882c81ee"
+      "sha256": "32a6dc4f3860b5fda4bef24f063f161ab10891cb4d3332f02cce237dc7abfb64"
     },
     "recognition_threshold": {
       "relative_path": "reports/evaluation/recognition_threshold.json",
-      "sha256": "e7fb9a21287705a4a340b6b73617591cd2d98f0b3807bcca3133070d6f735705"
+      "sha256": "6e4ba2d76f90a3bc6a70907fd20c9a0353de962f6a6fb8a30517e5ae5ea90429"
     },
     "recognition_validation": {
       "relative_path": "reports/evaluation/recognition_validation.json",
-      "sha256": "651b9e97069c7f6d69aa040f8b87fa840ef2856fbf95048bbb348d3a2a0e70ce"
+      "sha256": "9f7014ded67d2fb26cb94865e614173de329e37a307b48c2bd129d0375c38ec7"
     }
   },
   "schema_version": 1

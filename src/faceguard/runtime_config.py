@@ -120,6 +120,7 @@ def load_runtime_config(path: str | Path, *, project_root: str | Path) -> Runtim
             "pad_min_observations",
             "max_track_gap_ms",
             "min_iou",
+            "min_track_embedding_similarity",
             "min_detection_score",
             "min_face_size_px",
             "min_blur_variance",
@@ -153,6 +154,10 @@ def load_runtime_config(path: str | Path, *, project_root: str | Path) -> Runtim
         ),
         max_track_gap_ms=_number(runtime["max_track_gap_ms"], "runtime.max_track_gap_ms"),
         min_iou=_number(runtime["min_iou"], "runtime.min_iou"),
+        min_track_embedding_similarity=_number(
+            runtime["min_track_embedding_similarity"],
+            "runtime.min_track_embedding_similarity",
+        ),
         min_detection_score=_number(
             runtime["min_detection_score"], "runtime.min_detection_score"
         ),

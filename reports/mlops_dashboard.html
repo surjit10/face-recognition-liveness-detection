@@ -999,7 +999,7 @@
           <div class="pipe-node" id="node-gal" onclick="inspectNode('gal')">
             <span class="pipe-seq">05</span>
             <div class="pipe-label">Gallery Match</div>
-            <span class="pipe-pill">187 Enrolled</span>
+            <span class="pipe-pill">186 Enrolled</span>
           </div>
 
           <span class="pipe-arrow">➔</span>
@@ -1031,15 +1031,15 @@
     <section id="tab-accuracy" class="tab-view">
       <div class="view-header">
         <h2>🎯 Face Recognition Accuracy Visualizer</h2>
-        <p>Evaluated on the frozen, held-out test split of 647 open-set gallery searches across 234 independent identities.</p>
+        <p>Held-out test split: 625 open-set gallery searches (351 enrolled-person, 274 stranger) after the runtime quality gate removed bystander-face samples. Photos of each person come from one sitting, so these are same-session results.</p>
       </div>
 
       <div class="grid-2">
-        <!-- Known Registered Staff (367 Probes) -->
+        <!-- Known Registered Staff (351 Probes) -->
         <div class="card">
           <div class="card-top">
-            <span class="card-title">Enrolled / Registered Staff (367 Searches)</span>
-            <span class="tag-passed">95.91% High Accuracy</span>
+            <span class="card-title">Enrolled / Registered Staff (351 Searches)</span>
+            <span class="tag-passed">99.15% Recognised</span>
           </div>
           <p style="font-size: 0.85rem; color: var(--text-secondary);">
             What happens when an enrolled employee stands in front of the camera?
@@ -1048,25 +1048,25 @@
           <div class="matrix-pair">
             <div class="matrix-box green">
               <span class="hw-label">Correctly Verified</span>
-              <div class="matrix-stat" style="color: #34d399;">352</div>
-              <div class="matrix-desc">95.91% verified on 1st attempt</div>
+              <div class="matrix-stat" style="color: #34d399;">348</div>
+              <div class="matrix-desc">99.15% verified</div>
             </div>
             <div class="matrix-box yellow">
               <span class="hw-label">Re-scan Needed (FNIR)</span>
-              <div class="matrix-stat" style="color: #fbbf24;">12</div>
-              <div class="matrix-desc">3.27% score below threshold</div>
+              <div class="matrix-stat" style="color: #fbbf24;">3</div>
+              <div class="matrix-desc">0.85% score below threshold</div>
             </div>
           </div>
           <p style="font-size: 0.8rem; color: var(--text-muted); text-align: center; margin-top: 0.5rem;">
-            Only 3 misidentifications observed (0.82%). 95% Confidence Interval: [93.65% – 97.84%].
+            No misidentifications observed. 95% interval for the failure rate (bootstrap by person): [0.00% – 1.99%].
           </p>
         </div>
 
-        <!-- Impostors / Strangers (280 Probes) -->
+        <!-- Impostors / Strangers (274 Probes) -->
         <div class="card">
           <div class="card-top">
-            <span class="card-title">Unknown Strangers / Impostors (280 Searches)</span>
-            <span class="tag-passed">98.21% Blocked</span>
+            <span class="card-title">Unknown Strangers / Impostors (274 Searches)</span>
+            <span class="tag-passed">274 / 274 Blocked</span>
           </div>
           <p style="font-size: 0.85rem; color: var(--text-secondary);">
             What happens when an unregistered person tries to clock in?
@@ -1075,17 +1075,17 @@
           <div class="matrix-pair">
             <div class="matrix-box green">
               <span class="hw-label">Correctly Blocked</span>
-              <div class="matrix-stat" style="color: #34d399;">275</div>
-              <div class="matrix-desc">98.21% rejected as Unknown</div>
+              <div class="matrix-stat" style="color: #34d399;">274</div>
+              <div class="matrix-desc">100% rejected as Unknown</div>
             </div>
             <div class="matrix-box red">
               <span class="hw-label">False Accept (FPIR)</span>
-              <div class="matrix-stat" style="color: #f43f5e;">5</div>
-              <div class="matrix-desc">1.79% stranger false alarms</div>
+              <div class="matrix-stat" style="color: #f43f5e;">0</div>
+              <div class="matrix-desc">0 stranger false accepts</div>
             </div>
           </div>
           <p style="font-size: 0.8rem; color: var(--text-muted); text-align: center; margin-top: 0.5rem;">
-            95% Confidence Interval for false alarms: [0.00% – 4.46%].
+            Zero observed does not mean zero risk: the one-sided 95% upper bound is 1.09%, and the probes come from only 24 people.
           </p>
         </div>
       </div>
@@ -1097,19 +1097,19 @@
             <strong style="font-size: 1rem; color: var(--text-primary);">Interactive Cosine Similarity Threshold:</strong>
             <span style="color: var(--text-muted); font-size: 0.85rem; margin-left: 0.5rem;">Drag to simulate operating points</span>
           </div>
-          <span class="slider-val-badge" id="sliderValDisplay">0.6714 (Optimal)</span>
+          <span class="slider-val-badge" id="sliderValDisplay">0.6554 (Frozen)</span>
         </div>
 
-        <input type="range" id="simSlider" min="0.40" max="0.90" step="0.01" value="0.6714" oninput="handleSliderChange(this.value)">
+        <input type="range" id="simSlider" min="0.40" max="0.90" step="0.01" value="0.6554" oninput="handleSliderChange(this.value)">
 
         <div style="display: flex; justify-content: space-between; font-size: 0.78rem; color: var(--text-muted); margin-top: 0.4rem;">
           <span>0.40 (Too Lenient &bull; Impostors get through)</span>
-          <span style="color: #60a5fa; font-weight: 700;">0.6714 (Optimal Frozen Threshold)</span>
+          <span style="color: #60a5fa; font-weight: 700;">0.6554 (Validation-Selected Threshold)</span>
           <span>0.90 (Too Strict &bull; Valid staff get rejected)</span>
         </div>
 
         <p id="sliderFeedback" style="margin-top: 1rem; font-size: 0.88rem; color: #93c5fd; background: rgba(59, 130, 246, 0.08); padding: 0.75rem 1rem; border-radius: 8px; border: 1px solid rgba(59, 130, 246, 0.2);">
-          At the calibrated threshold of <strong>0.6714</strong>, zero impostors passed validation while 96.7% of genuine registered staff were instantly verified.
+          At the validation-selected threshold of <strong>0.6554</strong>, no validation strangers were accepted (0/259) and 350 of 351 validation probes of enrolled people (99.7%) were verified.
         </p>
       </div>
     </section>
@@ -1118,7 +1118,7 @@
     <section id="tab-security" class="tab-view">
       <div class="view-header">
         <h2>🛡️ Anti-Spoofing & Live Attack Acceptance</h2>
-        <p>The 5 mandatory camera acceptance cases tested live under supervised conditions (<code>reports/phase_receipts/camera_acceptance_2026-11-01.json</code>).</p>
+        <p>Five supervised camera smoke tests, one trial each, recorded on 1 November 2026 (<code>reports/phase_receipts/camera_acceptance_2026-11-01.json</code>). They were recorded before the 14 November quality-gate and identity-binding changes and should be repeated. Printed photos, other screens, masks and video replays were not tested.</p>
       </div>
 
       <div class="card" style="margin-bottom: 1.5rem;">
@@ -1171,7 +1171,7 @@
             <div class="case-badge-icon" style="background: rgba(168, 85, 247, 0.15); color: #c084fc;">👥</div>
             <div>
               <div class="case-title">Case E: Multiple Faces in Frame</div>
-              <div class="case-sub">Two faces simultaneously in view (operator + nearby colleague)</div>
+              <div class="case-sub">Live operator and a face on a phone screen in view together</div>
             </div>
           </div>
           <span class="tag-passed">MULTIPLE FACES BLOCKED: PASS ✅</span>
@@ -1240,8 +1240,8 @@
         </div>
 
         <div class="hw-item" style="margin-bottom: 0.75rem;">
-          <div class="hw-label">Anti-Spoofing PAD (MobileNetV3 &bull; pad_mobilenetv3.onnx)</div>
-          <div class="spec-value mono">8f5bce59ce361595ae18f1bb8a4d709ec558b532729938d8d34360e227df7a28</div>
+          <div class="hw-label">Anti-Spoofing PAD (MobileNetV3 &bull; mobilenetv3_pad.onnx)</div>
+          <div class="spec-value mono">bd8bcc251df7b09285893f51dc35a3f7bd3d6e78c4be5641f49a4130f30e1359</div>
         </div>
 
         <div class="hw-item">
@@ -1288,12 +1288,12 @@
       pad: {
         title: "🛡️ Stage 3: Anti-Spoofing (Liveness Detection)",
         badge: "1.49 ms Super Fast",
-        desc: "Analyzes face micro-textures, display glare, moiré patterns, and bezels to ensure the face belongs to a living person rather than a photo, video, or paper mask. Requires 3 consecutive live frames before recognition.",
+        desc: "A binary CNN trained on CelebA-Spoof that scores whether a face looks like a live person or a presented photo/screen. Takes the median score over 8 observations of the same tracked face before recognition. Frame-level test APCER on CelebA-Spoof is 20.8%; live testing covered one phone-screen trial.",
         specs: [
           { label: "Model Architecture", val: "MobileNetV3 (224 × 224 crop)" },
           { label: "Execution Time", val: "1.49 ms on local CPU" },
           { label: "Liveness Cutoff", val: "0.7626 confidence score" },
-          { label: "Smoothing Policy", val: "3 consecutive live frames" }
+          { label: "Smoothing Policy", val: "Median of 8 observations, same face" }
         ]
       },
       rec: {
@@ -1309,21 +1309,21 @@
       },
       gal: {
         title: "📚 Stage 5: Gallery Vector Matching",
-        badge: "187 Registered Identities",
-        desc: "Performs instant matrix dot-product multiplication against the in-memory database of registered people. Identifies top-1 and top-2 candidate matches with margin calculation.",
+        badge: "186 Registered Identities",
+        desc: "Performs instant matrix dot-product multiplication against the in-memory database of registered people. Identifies the top-1 and top-2 candidates; exact ties are rejected.",
         specs: [
-          { label: "Enrolled Identities", val: "187 individuals" },
-          { label: "Enrolled Vectors", val: "1,430 face embeddings" },
+          { label: "Enrolled Identities", val: "186 individuals" },
+          { label: "Enrolled Vectors", val: "1,388 quality-gated embeddings" },
           { label: "Comparison Metric", val: "Cosine Similarity [-1.0, 1.0]" },
-          { label: "Margin Check", val: "Top-1 vs Top-2 score gap" }
+          { label: "Margin Check", val: "Configured 0.0 (exact ties rejected)" }
         ]
       },
       dec: {
         title: "✅ Stage 6: Verification & Attendance Decision",
         badge: "Fail-Closed Security",
-        desc: "Makes the final call. If the top-1 cosine similarity meets or exceeds 0.6714 with no numerical tie, attendance is confirmed and recorded in SQLite for the day. Otherwise, access is rejected.",
+        desc: "Makes the final call. If the top-1 cosine similarity meets or exceeds 0.6554 with no numerical tie, attendance is confirmed and recorded in SQLite for the day. Otherwise, access is rejected.",
         specs: [
-          { label: "Acceptance Rule", val: "Cosine Score >= 0.6714" },
+          { label: "Acceptance Rule", val: "Cosine Score >= 0.6554" },
           { label: "Audit Storage", val: "Local SQLite (checkins.db)" },
           { label: "Deduplication", val: "1 check-in per person per day" },
           { label: "Unknown Fallback", val: "Refuses entry (Fail-Closed)" }
@@ -1369,7 +1369,7 @@
 
     function handleSliderChange(val) {
       const num = parseFloat(val);
-      document.getElementById('sliderValDisplay').textContent = num.toFixed(4) + (Math.abs(num - 0.6714) < 0.01 ? " (Optimal)" : "");
+      document.getElementById('sliderValDisplay').textContent = num.toFixed(4) + (Math.abs(num - 0.6554) < 0.005 ? " (Frozen)" : "");
       
       const box = document.getElementById('sliderFeedback');
       if (num < 0.55) {
@@ -1386,7 +1386,7 @@
         box.style.color = '#93c5fd';
         box.style.background = 'rgba(59, 130, 246, 0.08)';
         box.style.borderColor = 'rgba(59, 130, 246, 0.2)';
-        box.innerHTML = `✅ <strong>Optimal Operating Point (${num.toFixed(4)}):</strong> Perfectly separates authorized staff from unauthorized strangers with 0.0% validation false matches.`;
+        box.innerHTML = `ℹ️ <strong>Operating range (${num.toFixed(4)}):</strong> Around the frozen threshold no validation strangers were accepted. This is an illustration, not a guarantee for new people or new sessions.`;
       }
     }
 
@@ -1397,7 +1397,7 @@
 
       if (isSimpleMode) {
         text.textContent = "Technical Details Mode";
-        info.innerHTML = `<strong>Simple Explanation Mode:</strong> Think of FaceGuard like a high-tech building security guard. When you step in front of the camera, it first verifies you are a real breathing human (not a smartphone screen or printed photo). Next, it measures your face's unique structure, matches it against enrolled employees, and checks you in. All the gauges below prove it does this in under 0.3 seconds without crashing.`;
+        info.innerHTML = `<strong>Simple Explanation Mode:</strong> Think of FaceGuard like a high-tech building security guard. When you step in front of the camera, it first checks for signs that the face is a phone screen or a photo (this check is not foolproof). Next, it measures your face's unique structure, matches it against enrolled employees, and checks you in. The gauges below show each camera frame is processed in under 0.3 seconds (p95) on a laptop CPU.`;
       } else {
         text.textContent = "Beginner Explanations";
         info.innerHTML = `<strong>Audited Performance Receipts:</strong> Every value below is generated from verified system benchmarks and test splits on your Intel Core i5 laptop and camera. All target objectives passed with zero camera read failures.`;

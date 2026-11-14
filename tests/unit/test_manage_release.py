@@ -68,6 +68,7 @@ def releases_setup(tmp_path: Path):
                 "pad_min_observations": 8,
                 "max_track_gap_ms": 500.0,
                 "min_iou": 0.3,
+                "min_track_embedding_similarity": 0.5,
                 "min_detection_score": 0.6,
                 "min_face_size_px": 80,
                 "min_blur_variance": 40.0,
