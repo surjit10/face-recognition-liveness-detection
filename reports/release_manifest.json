@@ -54,48 +54,15 @@
       "pad_min_observations": 8
     }
   },
-  "created_at": "2026-11-14T10:03:19.837558+00:00",
+  "created_at": "2026-11-14T10:08:20.678569+00:00",
   "environment": {
     "python": "3.12.3",
     "runtime_lock_sha256": "2e03c24b6fbe909d03b1829c103da5c967bfcf948575123aae0c15ffb68891a3"
   },
   "git": {
-    "clean": false,
-    "commit": "03e9b941083f7a535e434d639d372384bd5afc77",
-    "uncommitted_files": [
-      "M README.md",
-      "M configs/decisions.yaml",
-      "M configs/runtime.yaml",
-      "M data/manifests/recognition_enrollment.csv",
-      "M data/manifests/recognition_split_summary.json",
-      "M data/manifests/recognition_test_impostor.csv",
-      "M data/manifests/recognition_test_known.csv",
-      "M data/manifests/recognition_val_impostor.csv",
-      "M data/manifests/recognition_val_known.csv",
-      "M docs/ARCHITECTURE.md",
-      "M docs/DEMO_RUNBOOK.md",
-      "M docs/EVALUATION.md",
-      "M docs/PROTOTYPE_MODEL_CARD.md",
-      "M reference/tracking/STATUS.md",
-      "M reports/audits/recognition_split_validation.json",
-      "M reports/environments/runtime_readiness.json",
-      "M reports/evaluation/recognition_test.json",
-      "M reports/evaluation/recognition_threshold.json",
-      "M reports/evaluation/recognition_validation.json",
-      "M reports/mlops_dashboard.html",
-      "M reports/phase_receipts/mlflow_latest.json",
-      "M reports/release_manifest.json",
-      "M scripts/promote_release.py",
-      "M src/faceguard/pipeline.py",
-      "M src/faceguard/runtime_config.py",
-      "M tests/unit/test_manage_release.py",
-      "M tests/unit/test_pipeline.py",
-      "M tests/unit/test_promote_release.py",
-      "M tests/unit/test_runtime_config.py",
-      "?? data/manifests/recognition_quality_exclusions.csv",
-      "?? scripts/apply_recognition_quality_gate.py",
-      "?? tests/unit/test_apply_recognition_quality_gate.py"
-    ]
+    "clean": true,
+    "commit": "5261c7d824ea696798c8ed81ad0d49152bd9ae98",
+    "uncommitted_files": []
   },
   "release_id": "faceguard-v2-development",
   "reports": {
