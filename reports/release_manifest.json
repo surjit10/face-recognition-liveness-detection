@@ -54,14 +54,14 @@
       "pad_min_observations": 8
     }
   },
-  "created_at": "2026-11-14T10:08:20.678569+00:00",
+  "created_at": "2026-11-14T10:29:13.184968+00:00",
   "environment": {
     "python": "3.12.3",
     "runtime_lock_sha256": "2e03c24b6fbe909d03b1829c103da5c967bfcf948575123aae0c15ffb68891a3"
   },
   "git": {
     "clean": true,
-    "commit": "5261c7d824ea696798c8ed81ad0d49152bd9ae98",
+    "commit": "ec64873faf07d1bb3756927797c522f00582aa70",
     "uncommitted_files": []
   },
   "release_id": "faceguard-v2-development",
