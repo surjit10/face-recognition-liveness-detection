@@ -155,8 +155,9 @@ call. Regression tests: `tests/unit/test_pipeline.py`.
 ## Target Hardware Benchmark
 
 Measured on 1 November 2026 on an Intel Core i5-10300H CPU @ 2.50 GHz (8 logical
-cores, 15.5 GB RAM), Linux, USB webcam, before the 14 November changes. Those changes
-add no model inference, but the benchmark should be re-run to confirm.
+cores, 15.5 GB RAM), Linux, USB webcam, before the 14 November changes. The submission
+keeps this measurement: those changes add no model inference (one 512-d dot product per
+frame), so it was not re-measured.
 
 | Metric | Measured | Target | Status |
 |---|---|---|---|
@@ -183,7 +184,9 @@ Next optimisation steps, in order of expected benefit:
 Each case was a **single guided trial** on one laptop and webcam. Evidence is operator
 observation or a screenshot that was reviewed but not retained. These are smoke tests,
 not accuracy measurements. They were recorded with the previous gallery and threshold
-and before the identity-binding fix, so they must be repeated.
+and before the identity-binding fix, and were not repeated for this submission. The
+identity-binding fix only adds a rejection path; the gallery and threshold changes bear
+on cases A and B.
 
 | Case | Scenario | Expected behaviour | Observed |
 |---|---|---|---|

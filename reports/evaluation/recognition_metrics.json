@@ -1,0 +1,37 @@
+{
+  "inputs_sha256": {
+    "test_scores": "4324e7dc8e6a062cd446f1c8f612c56c79b96cc1694f5fc63b7ce62f2cb4e11f",
+    "threshold_report": "6e4ba2d76f90a3bc6a70907fd20c9a0353de962f6a6fb8a30517e5ae5ea90429",
+    "validation_scores": "073b21c31e490db0e6366574ef840cc8ac2f45b2b3b43853b4a7d89d285bbe32"
+  },
+  "min_top1_top2_margin": 0.0,
+  "privacy": "aggregate counts and rates only; no probe, identity or embedding values",
+  "schema_version": 1,
+  "status": "verified",
+  "test": {
+    "impostor_false_accepts": 0,
+    "impostor_false_positive_identification_rate": 0.0,
+    "impostor_fpir_upper_95": 0.01087377784900223,
+    "impostor_searches": 274,
+    "known_correct_accepts": 348,
+    "known_identification_failure_rate": 0.008547008547008517,
+    "known_misidentification_accept_rate": 0.0,
+    "known_misidentification_accepts": 0,
+    "known_rejections": 3,
+    "known_searches": 351
+  },
+  "threshold": 0.6553505659103394,
+  "threshold_policy": "recognition_fmr_bound",
+  "validation": {
+    "impostor_false_accepts": 0,
+    "impostor_false_positive_identification_rate": 0.0,
+    "impostor_fpir_upper_95": 0.011499898681967657,
+    "impostor_searches": 259,
+    "known_correct_accepts": 350,
+    "known_identification_failure_rate": 0.002849002849002802,
+    "known_misidentification_accept_rate": 0.0,
+    "known_misidentification_accepts": 0,
+    "known_rejections": 1,
+    "known_searches": 351
+  }
+}

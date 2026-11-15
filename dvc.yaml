@@ -10,7 +10,27 @@ stages:
       - reports/environments/runtime_readiness.json:
           cache: false
 
+  evaluate:
+    # Re-derives the validation threshold and validation/test metrics from the
+    # private per-probe scores (git-ignored) and fails if the committed reports,
+    # threshold curve or configs/runtime.yaml have drifted from them.
+    cmd: .venv/bin/python scripts/verify_recognition_metrics.py
+    deps:
+      - scripts/verify_recognition_metrics.py
+      - src/faceguard/recognition_metrics.py
+      - data/interim/recognition_scores/recognition_validation_scores.csv
+      - data/interim/recognition_scores/recognition_test_scores.csv
+      - reports/evaluation/recognition_threshold.json
+      - reports/evaluation/recognition_validation.json
+      - reports/evaluation/recognition_test.json
+      - configs/runtime.yaml
+    metrics:
+      - reports/evaluation/recognition_metrics.json:
+          cache: false
+
   scan:
+    # The scan covers every tracked file, which DVC cannot list as deps, so it always re-runs.
+    always_changed: true
     cmd: .venv/bin/python scripts/scan_artifacts.py > reports/phase_receipts/artifact_scan.txt
     deps:
       - scripts/scan_artifacts.py

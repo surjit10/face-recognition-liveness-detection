@@ -7,12 +7,12 @@ stages:
     deps:
     - path: configs/runtime.yaml
       hash: md5
-      md5: 0edebae4642273c779a475639f2c5b31
-      size: 1438
+      md5: d46a942ae3de1e4140d4f9255f240ba4
+      size: 1815
     - path: models/private
       hash: md5
-      md5: 59d4ea5878c7a87ab79171ac3db91f97.dir
-      size: 186546103
+      md5: 04122d0ecd58089ee14c23262b9cae7e.dir
+      size: 186464389
       nfiles: 6
     - path: scripts/run_demo.py
       hash: md5
@@ -20,13 +20,13 @@ stages:
       size: 14686
     - path: src/faceguard
       hash: md5
-      md5: 39326ddb06c035bf7f6103a72cf53fbe.dir
-      size: 310340
+      md5: 03c5dc7ad2982381dc4eb77bf72efe64.dir
+      size: 312185
       nfiles: 29
     outs:
     - path: reports/environments/runtime_readiness.json
       hash: md5
-      md5: fb3cde3908786decb065233a48faa0c1
+      md5: 3437570d873e898706dfc83e79ecc8c2
       size: 762
   scan:
     cmd: .venv/bin/python scripts/scan_artifacts.py > 
@@ -43,5 +43,45 @@ stages:
     outs:
     - path: reports/phase_receipts/artifact_scan.txt
       hash: md5
-      md5: d979d693ce80f569453eff7eeda59c2c
+      md5: 902ccf4e918ad4d61ad2ce5d1aa5764f
       size: 55
+  evaluate:
+    cmd: .venv/bin/python scripts/verify_recognition_metrics.py
+    deps:
+    - path: configs/runtime.yaml
+      hash: md5
+      md5: d46a942ae3de1e4140d4f9255f240ba4
+      size: 1815
+    - path: data/interim/recognition_scores/recognition_test_scores.csv
+      hash: md5
+      md5: 8404355c842e07f0b6cad02383fd8b26
+      size: 54890
+    - path: data/interim/recognition_scores/recognition_validation_scores.csv
+      hash: md5
+      md5: 309466508ab41ad651bab8d52d0bb4f0
+      size: 53517
+    - path: reports/evaluation/recognition_test.json
+      hash: md5
+      md5: 71255dd96acb248e5f726bc4c28bca1e
+      size: 3549
+    - path: reports/evaluation/recognition_threshold.json
+      hash: md5
+      md5: 265502123a483bd6b20ec3d3d678ee32
+      size: 164669
+    - path: reports/evaluation/recognition_validation.json
+      hash: md5
+      md5: 9fbe4ae89a8022735810c02e63c1bf2a
+      size: 3556
+    - path: scripts/verify_recognition_metrics.py
+      hash: md5
+      md5: d2b55497dd0d521b8398338830c23c37
+      size: 11046
+    - path: src/faceguard/recognition_metrics.py
+      hash: md5
+      md5: 863d2f90271b2d95b0262525c8668f83
+      size: 6829
+    outs:
+    - path: reports/evaluation/recognition_metrics.json
+      hash: md5
+      md5: 433d3451f1af4fe115db3f779898816d
+      size: 1409
