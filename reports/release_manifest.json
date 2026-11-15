@@ -54,14 +54,14 @@
       "pad_min_observations": 8
     }
   },
-  "created_at": "2026-11-14T10:29:13.184968+00:00",
+  "created_at": "2026-11-15T03:25:46.415216+00:00",
   "environment": {
     "python": "3.12.3",
     "runtime_lock_sha256": "2e03c24b6fbe909d03b1829c103da5c967bfcf948575123aae0c15ffb68891a3"
   },
   "git": {
     "clean": true,
-    "commit": "ec64873faf07d1bb3756927797c522f00582aa70",
+    "commit": "bcb0bd697b26cf74e9227f5c039c17fdf34cbf56",
     "uncommitted_files": []
   },
   "release_id": "faceguard-v2-development",
@@ -72,7 +72,7 @@
     },
     "readiness": {
       "relative_path": "reports/environments/runtime_readiness.json",
-      "sha256": "de772f0bd4cf2e242e5395a27e10597770121a70895bcfae2131873f0f7be14f"
+      "sha256": "e93e5d272930cfae346781fc6e3a194b09e1eb70d2c985a54931afc89bc23301"
     },
     "recognition_test": {
       "relative_path": "reports/evaluation/recognition_test.json",
