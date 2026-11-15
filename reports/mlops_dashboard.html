@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>FaceGuard AI — MLOps Observability & Performance Cockpit</title>
+  <title>FaceGuard AI MLOps Dashboard</title>
   <style>
     :root {
       --bg-base: #07090e;
@@ -84,8 +84,10 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 1.3rem;
-      box-shadow: 0 0 16px var(--blue-glow);
+      font-size: 0.9rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      color: #ffffff;
     }
 
     .brand-info h1 {
@@ -248,10 +250,6 @@
       font-size: 0.88rem;
     }
 
-    .helper-icon {
-      font-size: 1.25rem;
-      line-height: 1;
-    }
 
     /* Grid Layouts */
     .grid-4 {
@@ -294,9 +292,7 @@
     }
 
     .card:hover {
-      border-color: rgba(255, 255, 255, 0.18);
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
-      transform: translateY(-2px);
+      border-color: rgba(255, 255, 255, 0.14);
     }
 
     .card-top {
@@ -314,16 +310,6 @@
       letter-spacing: 0.06em;
     }
 
-    .card-icon-box {
-      width: 34px;
-      height: 34px;
-      border-radius: 8px;
-      background: var(--bg-subtle);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1.15rem;
-    }
 
     .metric-hero {
       font-size: 2.25rem;
@@ -417,7 +403,7 @@
 
     .pipe-node {
       flex: 1;
-      min-width: 175px;
+      min-width: 132px;
       background: var(--bg-surface);
       border: 1px solid var(--border-subtle);
       border-radius: 12px;
@@ -471,9 +457,12 @@
     }
 
     .pipe-arrow {
-      color: var(--text-muted);
-      font-size: 1.2rem;
-      user-select: none;
+      flex: 0 0 auto;
+      width: 8px;
+      height: 8px;
+      border-top: 2px solid var(--text-muted);
+      border-right: 2px solid var(--text-muted);
+      transform: rotate(45deg);
     }
 
     /* Inspector Drawer */
@@ -714,7 +703,8 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 1.15rem;
+      font-size: 0.95rem;
+      font-weight: 700;
     }
 
     .case-title {
@@ -787,20 +777,19 @@
   <header class="master-header">
     <div class="top-bar">
       <div class="brand">
-        <div class="brand-icon">🛡️</div>
+        <div class="brand-icon" aria-hidden="true">FG</div>
         <div class="brand-info">
           <h1>FaceGuard AI</h1>
-          <span>MLOps Observability & System Cockpit</span>
+          <span>MLOps and Runtime Observability</span>
         </div>
       </div>
       <div class="top-actions">
-        <div class="status-badge recorded" id="runtimeBadge" title="Data source for the speed cockpit">
+        <div class="status-badge recorded" id="runtimeBadge" title="Data source for the performance view">
           <span class="live-dot"></span>
           <span id="runtimeBadgeText">Recorded benchmark · 1 Nov 2026 · passed</span>
         </div>
         <button class="btn-toggle" id="toggleModeBtn" onclick="toggleMode()">
-          <span>💡</span>
-          <span id="modeText">Beginner Explanations</span>
+          <span id="modeText">Plain-language summary</span>
         </button>
       </div>
     </div>
@@ -808,19 +797,19 @@
     <!-- PERSISTENT TAB BAR (ALWAYS VISIBLE WHEN SCROLLING) -->
     <nav class="tab-strip">
       <button class="tab-btn active" onclick="activateTab('cockpit', this)">
-        <span>🚀</span> Speed & Hardware Cockpit
+        Performance
       </button>
       <button class="tab-btn" onclick="activateTab('pipeline', this)">
-        <span>⚡</span> Pipeline Flowchart
+        Pipeline
       </button>
       <button class="tab-btn" onclick="activateTab('accuracy', this)">
-        <span>🎯</span> Face Accuracy & Thresholds
+        Recognition Accuracy
       </button>
       <button class="tab-btn" onclick="activateTab('security', this)">
-        <span>🛡️</span> Liveness & Attack Cases
+        Liveness Tests
       </button>
       <button class="tab-btn" onclick="activateTab('guardrails', this)">
-        <span>📦</span> MLOps Guardrails & Integrity
+        Integrity & CI
       </button>
     </nav>
   </header>
@@ -830,17 +819,16 @@
 
     <!-- INTUITIVE HELPER BANNER -->
     <div class="helper-banner" id="infoBanner">
-      <span class="helper-icon">💡</span>
       <div id="infoText">
-        <strong>Audited Performance Receipts:</strong> Values marked <em>Recorded</em> come from verified benchmarks and test splits on the target Intel Core i5 laptop and camera, where every target passed with zero camera read failures. Values marked <em>Live</em> come from the runtime currently serving this page.
+        <strong>Data sources:</strong> Values marked <em>Recorded</em> come from verified benchmarks and test splits on the target Intel Core i5 laptop and camera, where every target passed with zero camera read failures. Values marked <em>Live</em> come from the runtime currently serving this page.
       </div>
     </div>
 
     <!-- TAB 1: SPEED & HARDWARE COCKPIT (FIRST FOR IMMEDIATE CLARITY) -->
     <section id="tab-cockpit" class="tab-view active">
       <div class="view-header">
-        <h2>🚀 Speed & Hardware Cockpit</h2>
-        <p id="cockpitSubtitle">Real-time throughput, latency, memory utilization, and verification speed measured on target hardware on 1 November 2026 (<code>reports/benchmarks/prototype_camera.json</code>). The 14 November changes add no model inference, so this was not re-measured.</p>
+        <h2>Runtime Performance</h2>
+        <p id="cockpitSubtitle">Throughput, capture-to-decision latency, memory and verification time measured on the target hardware on 1 November 2026 (<code>reports/benchmarks/prototype_camera.json</code>). The 14 November changes add no model inference, so this was not re-measured.</p>
       </div>
 
       <!-- Live runtime feed (polls /metrics.json when served by run_demo/run_app --metrics-port) -->
@@ -881,7 +869,6 @@
         <div class="card">
           <div class="card-top">
             <span class="card-title">Processed Throughput</span>
-            <div class="card-icon-box">⚡</div>
           </div>
           <div class="metric-hero" style="color: #34d399;">
             <span id="fpsValue">6.52</span> <span class="metric-unit">FPS</span>
@@ -891,7 +878,7 @@
             <div class="meter-fill emerald" id="fpsMeter" style="width: 100%;"></div>
           </div>
           <div class="card-footer">
-            <span class="tag-passed" id="fpsTag">✓ PASSED</span>
+            <span class="tag-passed" id="fpsTag">Passed</span>
             <span class="target-desc">Target: ≥ 5.0 FPS</span>
           </div>
         </div>
@@ -900,7 +887,6 @@
         <div class="card">
           <div class="card-top">
             <span class="card-title">P95 Capture-to-Decision</span>
-            <div class="card-icon-box">⏱️</div>
           </div>
           <div class="metric-hero" style="color: #38bdf8;">
             <span id="p95Value">285.6</span> <span class="metric-unit">ms</span>
@@ -910,7 +896,7 @@
             <div class="meter-fill" id="p95Meter" style="width: 57%;"></div>
           </div>
           <div class="card-footer">
-            <span class="tag-passed" id="p95Tag">✓ PASSED</span>
+            <span class="tag-passed" id="p95Tag">Passed</span>
             <span class="target-desc">Target: ≤ 500.0 ms</span>
           </div>
         </div>
@@ -919,7 +905,6 @@
         <div class="card">
           <div class="card-top">
             <span class="card-title">Peak Memory (RAM)</span>
-            <div class="card-icon-box">💾</div>
           </div>
           <div class="metric-hero" style="color: #a78bfa;">
             <span id="memValue">644.2</span> <span class="metric-unit">MB</span>
@@ -929,7 +914,7 @@
             <div class="meter-fill" id="memMeter" style="width: 85%;"></div>
           </div>
           <div class="card-footer">
-            <span class="tag-passed" id="memTag">✓ PASSED</span>
+            <span class="tag-passed" id="memTag">Passed</span>
             <span class="target-desc">Limit: ≤ 750.0 MB</span>
           </div>
         </div>
@@ -938,7 +923,6 @@
         <div class="card">
           <div class="card-top">
             <span class="card-title">Verification Speed</span>
-            <div class="card-icon-box">🎯</div>
           </div>
           <div class="metric-hero" style="color: #fbbf24;">
             1.34 <span class="metric-unit">sec</span>
@@ -948,7 +932,7 @@
             <div class="meter-fill amber" style="width: 44%;"></div>
           </div>
           <div class="card-footer">
-            <span class="tag-passed">✓ PASSED</span>
+            <span class="tag-passed">Passed</span>
             <span class="target-desc">Target: ≤ 3.0 sec</span>
           </div>
         </div>
@@ -961,11 +945,11 @@
           <div class="card-top">
             <span class="card-title">CPU Stage Latency Breakdown</span>
             <span class="tag-passed" style="color: #38bdf8; background: rgba(56, 189, 248, 0.15); border-color: rgba(56, 189, 248, 0.3);">
-              118.3 ms Raw Compute
+              118.3 ms total
             </span>
           </div>
           <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1.35rem;">
-            Shows exact CPU time spent inside each model on a 640×480 frame.
+            Median CPU time per model on a 640×480 frame (<code>reports/benchmarks/model_stages_cpu.json</code>).
           </p>
 
           <div class="stage-row">
@@ -993,11 +977,11 @@
           </div>
         </div>
 
-        <!-- Right: Audited Target Hardware (FIXED FORMATTING & NO TRUNCATION) -->
+        <!-- Right: target hardware -->
         <div class="card">
           <div class="card-top">
-            <span class="card-title">Audited Target Hardware</span>
-            <span class="tag-passed">CERTIFIED TESTBED</span>
+            <span class="card-title">Target Hardware</span>
+            <span class="tag-passed">Benchmark target</span>
           </div>
           <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.75rem;">
             Frozen environment specifications verified in <code>reports/phase_receipts/performance_gate_2026-11-01.json</code>.
@@ -1036,7 +1020,7 @@
     <!-- TAB 2: PIPELINE FLOWCHART -->
     <section id="tab-pipeline" class="tab-view">
       <div class="view-header">
-        <h2>⚡ Sequential Detection & Verification Pipeline</h2>
+        <h2>Detection and Verification Pipeline</h2>
         <p>Click on any stage in the flow below to inspect its model architecture, tensor shapes, and decision rules.</p>
       </div>
 
@@ -1048,7 +1032,7 @@
             <span class="pipe-pill">640×480 RGB</span>
           </div>
 
-          <span class="pipe-arrow">➔</span>
+          <span class="pipe-arrow" aria-hidden="true"></span>
 
           <div class="pipe-node" id="node-det" onclick="inspectNode('det')">
             <span class="pipe-seq">02</span>
@@ -1056,7 +1040,7 @@
             <span class="pipe-pill">35.4 ms (SCRFD)</span>
           </div>
 
-          <span class="pipe-arrow">➔</span>
+          <span class="pipe-arrow" aria-hidden="true"></span>
 
           <div class="pipe-node" id="node-pad" onclick="inspectNode('pad')">
             <span class="pipe-seq">03</span>
@@ -1064,7 +1048,7 @@
             <span class="pipe-pill">1.5 ms (MobileNet)</span>
           </div>
 
-          <span class="pipe-arrow">➔</span>
+          <span class="pipe-arrow" aria-hidden="true"></span>
 
           <div class="pipe-node" id="node-rec" onclick="inspectNode('rec')">
             <span class="pipe-seq">04</span>
@@ -1072,7 +1056,7 @@
             <span class="pipe-pill">81.4 ms (ArcFace)</span>
           </div>
 
-          <span class="pipe-arrow">➔</span>
+          <span class="pipe-arrow" aria-hidden="true"></span>
 
           <div class="pipe-node" id="node-gal" onclick="inspectNode('gal')">
             <span class="pipe-seq">05</span>
@@ -1080,20 +1064,20 @@
             <span class="pipe-pill">186 Enrolled</span>
           </div>
 
-          <span class="pipe-arrow">➔</span>
+          <span class="pipe-arrow" aria-hidden="true"></span>
 
           <div class="pipe-node" id="node-dec" onclick="inspectNode('dec')">
             <span class="pipe-seq">06</span>
-            <div class="pipe-label">Verification Call</div>
-            <span class="pipe-pill">Accepted / Denied</span>
+            <div class="pipe-label">Decision</div>
+            <span class="pipe-pill">Verify / unknown</span>
           </div>
         </div>
 
         <!-- Inspector Drawer -->
         <div class="inspector-card" id="inspectorBox">
           <div class="inspector-top">
-            <h3 id="inspectHead">📹 Stage 1: Camera Input Stream</h3>
-            <span class="tag-passed" id="inspectBadge">OPERATIONAL</span>
+            <h3 id="inspectHead">Stage 1: Camera Input Stream</h3>
+            <span class="tag-passed" id="inspectBadge">640×480 RGB @ 30 FPS</span>
           </div>
           <p id="inspectText" style="color: var(--text-secondary); font-size: 0.9rem; line-height: 1.6;">
             Captures 640×480 RGB frames at 30 FPS. The system employs a bounded queue of depth 2 that intentionally discards stale frames when processing is busy, ensuring latency never cascades.
@@ -1108,7 +1092,7 @@
     <!-- TAB 3: ACCURACY & THRESHOLDS -->
     <section id="tab-accuracy" class="tab-view">
       <div class="view-header">
-        <h2>🎯 Face Recognition Accuracy Visualizer</h2>
+        <h2>Recognition Accuracy</h2>
         <p>Held-out test split: 625 open-set gallery searches (351 enrolled-person, 274 stranger) after the runtime quality gate removed bystander-face samples. Photos of each person come from one sitting, so these are same-session results.</p>
       </div>
 
@@ -1116,11 +1100,11 @@
         <!-- Known Registered Staff (351 Probes) -->
         <div class="card">
           <div class="card-top">
-            <span class="card-title">Enrolled / Registered Staff (351 Searches)</span>
-            <span class="tag-passed">99.15% Recognised</span>
+            <span class="card-title">Enrolled People (351 searches)</span>
+            <span class="tag-passed">99.15% verified</span>
           </div>
           <p style="font-size: 0.85rem; color: var(--text-secondary);">
-            What happens when an enrolled employee stands in front of the camera?
+            Outcome when an enrolled person is in front of the camera.
           </p>
 
           <div class="matrix-pair">
@@ -1130,7 +1114,7 @@
               <div class="matrix-desc">99.15% verified</div>
             </div>
             <div class="matrix-box yellow">
-              <span class="hw-label">Re-scan Needed (FNIR)</span>
+              <span class="hw-label">Not verified (FNIR)</span>
               <div class="matrix-stat" style="color: #fbbf24;">3</div>
               <div class="matrix-desc">0.85% score below threshold</div>
             </div>
@@ -1143,16 +1127,16 @@
         <!-- Impostors / Strangers (274 Probes) -->
         <div class="card">
           <div class="card-top">
-            <span class="card-title">Unknown Strangers / Impostors (274 Searches)</span>
-            <span class="tag-passed">274 / 274 Blocked</span>
+            <span class="card-title">Strangers (274 searches)</span>
+            <span class="tag-passed">274 / 274 rejected</span>
           </div>
           <p style="font-size: 0.85rem; color: var(--text-secondary);">
-            What happens when an unregistered person tries to clock in?
+            Outcome when a person who is not enrolled is in front of the camera.
           </p>
 
           <div class="matrix-pair">
             <div class="matrix-box green">
-              <span class="hw-label">Correctly Blocked</span>
+              <span class="hw-label">Correctly rejected</span>
               <div class="matrix-stat" style="color: #34d399;">274</div>
               <div class="matrix-desc">100% rejected as Unknown</div>
             </div>
@@ -1197,9 +1181,9 @@
         </div>
 
         <div style="display: flex; justify-content: space-between; font-size: 0.78rem; color: var(--text-muted); margin-top: 0.4rem;">
-          <span>0.40 (Too Lenient &bull; Impostors get through)</span>
+          <span>0.30: more lenient, more strangers accepted</span>
           <span style="color: #60a5fa; font-weight: 700;">0.6554 (Validation-Selected Threshold)</span>
-          <span>0.90 (Too Strict &bull; Valid staff get rejected)</span>
+          <span>0.95: stricter, more enrolled people rejected</span>
         </div>
 
         <p id="sliderFeedback" style="margin-top: 1rem; font-size: 0.88rem; color: #93c5fd; background: rgba(59, 130, 246, 0.08); padding: 0.75rem 1rem; border-radius: 8px; border: 1px solid rgba(59, 130, 246, 0.2);">
@@ -1214,64 +1198,64 @@
     <!-- TAB 4: LIVENESS & SPOOF CASES -->
     <section id="tab-security" class="tab-view">
       <div class="view-header">
-        <h2>🛡️ Anti-Spoofing & Live Attack Acceptance</h2>
+        <h2>Liveness (PAD) Acceptance Tests</h2>
         <p>Five supervised camera smoke tests, one trial each, recorded on 1 November 2026 (<code>reports/phase_receipts/camera_acceptance_2026-11-01.json</code>). They were recorded before the 14 November quality-gate and identity-binding changes and were not repeated for this submission; the identity-binding fix only adds a rejection path. Printed photos, other screens, masks and video replays were not tested.</p>
       </div>
 
       <div class="card" style="margin-bottom: 1.5rem;">
         <div class="case-row">
           <div class="case-left">
-            <div class="case-badge-icon" style="background: rgba(16, 185, 129, 0.15); color: #34d399;">👤</div>
+            <div class="case-badge-icon" style="background: rgba(16, 185, 129, 0.15); color: #34d399;">A</div>
             <div>
               <div class="case-title">Case A: Genuine Enrolled Operator</div>
               <div class="case-sub">Real person in front of webcam with neutral lighting</div>
             </div>
           </div>
-          <span class="tag-passed">IDENTIFIED: PASS ✅</span>
+          <span class="tag-passed">Identified: pass</span>
         </div>
 
         <div class="case-row">
           <div class="case-left">
-            <div class="case-badge-icon" style="background: rgba(245, 158, 11, 0.15); color: #fbbf24;">❓</div>
+            <div class="case-badge-icon" style="background: rgba(245, 158, 11, 0.15); color: #fbbf24;">B</div>
             <div>
               <div class="case-title">Case B: Live Person Absent from Gallery</div>
               <div class="case-sub">Real live human who has not been registered in the database</div>
             </div>
           </div>
-          <span class="tag-passed" style="color: #fbbf24; background: rgba(245, 158, 11, 0.12); border-color: rgba(245, 158, 11, 0.3);">UNKNOWN: PASS ✅</span>
+          <span class="tag-passed" style="color: #fbbf24; background: rgba(245, 158, 11, 0.12); border-color: rgba(245, 158, 11, 0.3);">Unknown: pass</span>
         </div>
 
         <div class="case-row">
           <div class="case-left">
-            <div class="case-badge-icon" style="background: rgba(244, 63, 94, 0.15); color: #f43f5e;">📱</div>
+            <div class="case-badge-icon" style="background: rgba(244, 63, 94, 0.15); color: #f43f5e;">C</div>
             <div>
               <div class="case-title">Case C: Smartphone Display Attack (Replay Spoof)</div>
               <div class="case-sub">High-resolution photo of enrolled operator presented on phone screen</div>
             </div>
           </div>
-          <span class="tag-passed">REJECTED (PAD SPOOF): PASS ✅</span>
+          <span class="tag-passed">Spoof rejected: pass</span>
         </div>
 
         <div class="case-row">
           <div class="case-left">
-            <div class="case-badge-icon" style="background: rgba(148, 163, 184, 0.15); color: #94a3b8;">🔲</div>
+            <div class="case-badge-icon" style="background: rgba(148, 163, 184, 0.15); color: #94a3b8;">D</div>
             <div>
               <div class="case-title">Case D: Empty Scene</div>
               <div class="case-sub">Background office environment with no human faces present</div>
             </div>
           </div>
-          <span class="tag-passed" style="color: #94a3b8; background: rgba(148, 163, 184, 0.12); border-color: rgba(148, 163, 184, 0.3);">LOOKING FOR FACE: PASS ✅</span>
+          <span class="tag-passed" style="color: #94a3b8; background: rgba(148, 163, 184, 0.12); border-color: rgba(148, 163, 184, 0.3);">Looking for face: pass</span>
         </div>
 
         <div class="case-row">
           <div class="case-left">
-            <div class="case-badge-icon" style="background: rgba(168, 85, 247, 0.15); color: #c084fc;">👥</div>
+            <div class="case-badge-icon" style="background: rgba(168, 85, 247, 0.15); color: #c084fc;">E</div>
             <div>
               <div class="case-title">Case E: Multiple Faces in Frame</div>
               <div class="case-sub">Live operator and a face on a phone screen in view together</div>
             </div>
           </div>
-          <span class="tag-passed">MULTIPLE FACES BLOCKED: PASS ✅</span>
+          <span class="tag-passed">Multiple faces blocked: pass</span>
         </div>
       </div>
     </section>
@@ -1279,15 +1263,14 @@
     <!-- TAB 5: MLOPS GUARDRAILS & INTEGRITY -->
     <section id="tab-guardrails" class="tab-view">
       <div class="view-header">
-        <h2>📦 MLOps Guardrails & Integrity Audit</h2>
-        <p>Automated software engineering, security scanners, and cryptographic checks protecting the repository.</p>
+        <h2>Integrity, Testing and Packaging</h2>
+        <p>Startup integrity checks, automated tests, the publication scanner and container packaging.</p>
       </div>
 
       <div class="grid-4">
         <div class="card">
           <div class="card-top">
             <span class="card-title">Model Integrity</span>
-            <div class="card-icon-box">🔒</div>
           </div>
           <div class="metric-hero" style="color: #34d399;">4 / 4</div>
           <div class="target-desc">SHA-256 verified at startup: detector, recognizer, PAD model, gallery</div>
@@ -1296,7 +1279,6 @@
         <div class="card">
           <div class="card-top">
             <span class="card-title">Automated Tests</span>
-            <div class="card-icon-box">🧪</div>
           </div>
           <div class="metric-hero" style="color: #38bdf8;">185 / 185</div>
           <div class="target-desc">Pytest unit, contract and integration tests passing (15 Nov 2026)</div>
@@ -1305,7 +1287,6 @@
         <div class="card">
           <div class="card-top">
             <span class="card-title">Privacy Scanner</span>
-            <div class="card-icon-box">🛡️</div>
           </div>
           <div class="metric-hero" style="color: #a78bfa;">171 Files</div>
           <div class="target-desc">0 biometric leaks, 0 secret keys</div>
@@ -1314,7 +1295,6 @@
         <div class="card">
           <div class="card-top">
             <span class="card-title">Packaging</span>
-            <div class="card-icon-box">📦</div>
           </div>
           <div class="metric-hero" style="color: #fbbf24;">Docker</div>
           <div class="target-desc">CPU runtime container built</div>
@@ -1324,11 +1304,11 @@
       <!-- Immutable Model Hashes -->
       <div class="card">
         <div class="card-top">
-          <span class="card-title">Pinned Cryptographic Model Hashes</span>
-          <span class="tag-passed">IMMUTABLE GUARANTEE</span>
+          <span class="card-title">Pinned Model Hashes</span>
+          <span class="tag-passed">Checked at startup</span>
         </div>
         <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1rem;">
-          These SHA-256 signatures are checked before the webcam is ever engaged. If a file is corrupted or modified, execution aborts safely.
+          These SHA-256 hashes are checked before the camera opens. If any file differs, startup is blocked.
         </p>
 
         <div class="hw-item" style="margin-bottom: 0.75rem;">
@@ -1352,7 +1332,7 @@
 
   <!-- FOOTER -->
   <footer>
-    FaceGuard AI MLOps Dashboard &bull; Verified Academic Prototype &bull; Local Supervised Attendance System
+    FaceGuard AI MLOps Dashboard &middot; Academic prototype &middot; Local supervised attendance system
   </footer>
 
   <!-- SCRIPT LOGIC -->
@@ -1361,30 +1341,30 @@
 
     const pipelineDetails = {
       cam: {
-        title: "📹 Stage 1: Camera Input Stream",
+        title: "Stage 1: Camera Input Stream",
         badge: "640×480 RGB @ 30 FPS",
-        desc: "Captures 640×480 RGB frames at 30 FPS. The system employs a bounded queue of depth 2 that intentionally discards stale frames when processing is busy, ensuring latency never cascades into video lag.",
+        desc: "Captures 640×480 RGB frames at 30 FPS into a bounded queue of depth 2 that discards stale frames while inference is busy, so latency stays bounded instead of building up.",
         specs: [
           { label: "Resolution", val: "640 × 480 pixels" },
           { label: "Queue Policy", val: "Latest-frame discard (Depth: 2)" },
-          { label: "Stale Frames Discarded", val: "109 frames (Lag-Free)" },
-          { label: "Camera Stability", val: "0 Read Failures &bull; Clean Release" }
+          { label: "Stale Frames Discarded", val: "109 of 214 captured (recorded run)" },
+          { label: "Camera Stability", val: "0 read failures, camera released" }
         ]
       },
       det: {
-        title: "🔍 Stage 2: Face Detection (InsightFace SCRFD)",
-        badge: "35.38 ms CPU Latency",
+        title: "Stage 2: Face Detection (InsightFace SCRFD)",
+        badge: "35.38 ms CPU",
         desc: "Scans the entire frame to detect human faces, predict bounding boxes, and extract 5 facial landmarks (eyes, nose, mouth corners) used for affine alignment.",
         specs: [
           { label: "Model Architecture", val: "SCRFD (det_2.5g.onnx)" },
           { label: "Input Tensor Shape", val: "1 × 3 × 640 × 640" },
-          { label: "Median Latency", val: "35.38 ms (28.2 FPS throughput)" },
+          { label: "Median Latency", val: "35.38 ms" },
           { label: "Multiple Faces Rule", val: "Rejects if face count > 1" }
         ]
       },
       pad: {
-        title: "🛡️ Stage 3: Anti-Spoofing (Liveness Detection)",
-        badge: "1.49 ms Super Fast",
+        title: "Stage 3: Anti-Spoofing (Liveness Detection)",
+        badge: "1.49 ms CPU",
         desc: "A binary CNN trained on CelebA-Spoof that scores whether a face looks like a live person or a presented photo/screen. Takes the median score over 8 observations of the same tracked face before recognition. Frame-level test APCER on CelebA-Spoof is 20.8%; live testing covered one phone-screen trial.",
         specs: [
           { label: "Model Architecture", val: "MobileNetV3 (224 × 224 crop)" },
@@ -1394,9 +1374,9 @@
         ]
       },
       rec: {
-        title: "🧬 Stage 4: Feature Extraction (ArcFace ResNet-50)",
-        badge: "81.45 ms Deep Embedding",
-        desc: "Projects the aligned face into a compact 512-dimensional mathematical identity vector (embedding) on the unit hypersphere using ArcFace angular margin loss.",
+        title: "Stage 4: Feature Extraction (ArcFace ResNet-50)",
+        badge: "81.45 ms CPU",
+        desc: "Maps the aligned face to a 512-dimensional unit-length embedding. The model was trained with the ArcFace additive angular margin loss.",
         specs: [
           { label: "Model Architecture", val: "ResNet-50 (w600k_r50.onnx)" },
           { label: "Output Vector", val: "512-dimensional Float32" },
@@ -1405,9 +1385,9 @@
         ]
       },
       gal: {
-        title: "📚 Stage 5: Gallery Vector Matching",
-        badge: "186 Registered Identities",
-        desc: "Performs instant matrix dot-product multiplication against the in-memory database of registered people. Identifies the top-1 and top-2 candidates; exact ties are rejected.",
+        title: "Stage 5: Gallery Vector Matching",
+        badge: "186 enrolled identities",
+        desc: "Computes cosine similarity (a dot product of unit vectors) against all 1,388 enrolled embeddings held in memory and keeps the top-1 and top-2 candidates. Exact ties are rejected.",
         specs: [
           { label: "Enrolled Identities", val: "186 individuals" },
           { label: "Enrolled Vectors", val: "1,388 quality-gated embeddings" },
@@ -1416,14 +1396,14 @@
         ]
       },
       dec: {
-        title: "✅ Stage 6: Verification & Attendance Decision",
-        badge: "Fail-Closed Security",
-        desc: "Makes the final call. If the top-1 cosine similarity meets or exceeds 0.6554 with no numerical tie, attendance is confirmed and recorded in SQLite for the day. Otherwise, access is rejected.",
+        title: "Stage 6: Verification & Attendance Decision",
+        badge: "Fail-closed",
+        desc: "After liveness has passed for the same tracked face, the person is verified if the top-1 cosine similarity is at least 0.6554 with no tie. Attendance is then recorded once per day in a local SQLite database; otherwise the face is reported as unknown.",
         specs: [
           { label: "Acceptance Rule", val: "Cosine Score >= 0.6554" },
-          { label: "Audit Storage", val: "Local SQLite (checkins.db)" },
+          { label: "Audit Storage", val: "Local SQLite (checkins.sqlite3)" },
           { label: "Deduplication", val: "1 check-in per person per day" },
-          { label: "Unknown Fallback", val: "Refuses entry (Fail-Closed)" }
+          { label: "Unknown Fallback", val: "Reported as unknown, nothing recorded" }
         ]
       }
     };
@@ -1503,17 +1483,17 @@
         box.style.color = '#f87171';
         box.style.background = 'rgba(244, 63, 94, 0.1)';
         box.style.borderColor = 'rgba(244, 63, 94, 0.3)';
-        box.innerHTML = `⚠️ <strong>Too lenient (${t.toFixed(4)}):</strong> ${falseAccepts} of ${VAL_STRANGERS} validation strangers would be accepted as an enrolled person.`;
+        box.innerHTML = `<strong>Too lenient (${t.toFixed(4)}):</strong> ${falseAccepts} of ${VAL_STRANGERS} validation strangers would be accepted as an enrolled person.`;
       } else if (falseRejects > FROZEN_REJECTS) {
         box.style.color = '#fbbf24';
         box.style.background = 'rgba(245, 158, 11, 0.1)';
         box.style.borderColor = 'rgba(245, 158, 11, 0.3)';
-        box.innerHTML = `⚠️ <strong>Stricter than needed (${t.toFixed(4)}):</strong> still 0 strangers accepted, but ${falseRejects} of ${VAL_ENROLLED} enrolled probes would be turned away (vs ${FROZEN_REJECTS} at the frozen threshold).`;
+        box.innerHTML = `<strong>Stricter than needed (${t.toFixed(4)}):</strong> still 0 strangers accepted, but ${falseRejects} of ${VAL_ENROLLED} enrolled probes would be turned away (vs ${FROZEN_REJECTS} at the frozen threshold).`;
       } else {
         box.style.color = '#93c5fd';
         box.style.background = 'rgba(59, 130, 246, 0.08)';
         box.style.borderColor = 'rgba(59, 130, 246, 0.2)';
-        box.innerHTML = `ℹ️ <strong>Best validation region (${t.toFixed(4)}):</strong> 0/${VAL_STRANGERS} strangers accepted and ${VAL_ENROLLED - falseRejects}/${VAL_ENROLLED} enrolled probes verified. The frozen value is the highest threshold with this result (FMR bound 0 on validation). Same-session data from few identities: not a guarantee for new people or sessions.`;
+        box.innerHTML = `<strong>Best validation region (${t.toFixed(4)}):</strong> 0/${VAL_STRANGERS} strangers accepted and ${VAL_ENROLLED - falseRejects}/${VAL_ENROLLED} enrolled probes verified. The frozen value is the highest threshold with this result (FMR bound 0 on validation). Same-session data from few identities: not a guarantee for new people or sessions.`;
       }
     }
 
@@ -1563,7 +1543,7 @@
       meter.style.width = Math.max(2, Math.min(100, (value / target) * 100)).toFixed(0) + '%';
       const ok = higherIsBetter ? value >= target : value <= target;
       tag.className = ok ? 'tag-passed' : 'tag-failed';
-      tag.textContent = ok ? '✓ OK' : '✗ MISS';
+      tag.textContent = ok ? 'Pass' : 'Fail';
     }
 
     function renderStates(counts, total) {
@@ -1725,11 +1705,11 @@
       const info = document.getElementById('infoText');
 
       if (isSimpleMode) {
-        text.textContent = "Technical Details Mode";
-        info.innerHTML = `<strong>Simple Explanation Mode:</strong> Think of FaceGuard like a high-tech building security guard. When you step in front of the camera, it first checks for signs that the face is a phone screen or a photo (this check is not foolproof). Next, it measures your face's unique structure, matches it against enrolled employees, and checks you in. The gauges below show each camera frame is processed in under 0.3 seconds (p95) on a laptop CPU.`;
+        text.textContent = "Technical summary";
+        info.innerHTML = `<strong>In plain terms:</strong> for each camera frame, FaceGuard first checks whether the face belongs to a live person rather than a photo or a screen (this check is not foolproof). It then compares the face with the enrolled gallery and records attendance only when both checks pass. On the target laptop CPU, 95% of frames receive a decision within 0.3 seconds.`;
       } else {
-        text.textContent = "Beginner Explanations";
-        info.innerHTML = `<strong>Audited Performance Receipts:</strong> Values marked <em>Recorded</em> come from verified benchmarks and test splits on the target Intel Core i5 laptop and camera, where every target passed with zero camera read failures. Values marked <em>Live</em> come from the runtime currently serving this page.`;
+        text.textContent = "Plain-language summary";
+        info.innerHTML = `<strong>Data sources:</strong> Values marked <em>Recorded</em> come from verified benchmarks and test splits on the target Intel Core i5 laptop and camera, where every target passed with zero camera read failures. Values marked <em>Live</em> come from the runtime currently serving this page.`;
       }
     }
 
