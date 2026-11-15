@@ -25,6 +25,11 @@ from faceguard.models import ModelPackError  # noqa: E402
 from faceguard.pad import PadInferenceError  # noqa: E402
 from faceguard.presentation import operator_message, safe_event  # noqa: E402
 from faceguard.runtime import FramePacket, LatestFrameQueue  # noqa: E402
+from faceguard.live_metrics import (  # noqa: E402
+    LiveMetricsHub,
+    LiveMetricsServer,
+    load_performance_targets,
+)
 from faceguard.telemetry import MetricsDashboard, MetricsSnapshot, RollingMetrics  # noqa: E402
 
 READ_FAILURE_LIMIT = 3
@@ -92,6 +97,7 @@ def run_video(
     metrics=None,
     dashboard=None,
     pad_required: int = 8,
+    live=None,
 ) -> int:
     last_state = None
     sequence = 0
@@ -109,6 +115,8 @@ def run_video(
         publish_metrics(
             metrics, dashboard, result, result.latency_ms, sequence, 0, pad_required
         )
+        if live is not None:
+            live.record(result, age_ms=result.latency_ms, captured=sequence, dropped=0)
         if stop or (dashboard is not None and dashboard.closed):
             break
     return 0
@@ -124,6 +132,7 @@ def run_camera(
     camera_source: int | str | None = None,
     max_reconnect_attempts: int = 3,
     reconnect_delay_s: float = 1.0,
+    live=None,
 ) -> int:
     frames = LatestFrameQueue(maxsize=config.frame_queue_size)
     stopping = threading.Event()
@@ -156,6 +165,8 @@ def run_camera(
                         )
                         if hasattr(verifier, "reset"):
                             verifier.reset()
+                        if live is not None:
+                            live.note_event("camera_disconnected")
                         capture.release()
 
                         reconnected = False
@@ -187,6 +198,8 @@ def run_camera(
                                     frames.put_latest(
                                         FramePacket(test_frame, time.monotonic() * 1000.0, sequence)
                                     )
+                                    if live is not None:
+                                        live.note_event("camera_reconnected")
                                     print(
                                         json.dumps(
                                             {
@@ -229,11 +242,21 @@ def run_camera(
                 last_state, stop = render_and_report(
                     packet.frame_bgr, result, packet.sequence, no_display, last_state
                 )
+                # Same capture-to-decision age (after display) that the Tk metrics UI uses.
+                age_ms = time.monotonic() * 1000.0 - packet.captured_monotonic_ms
+                if live is not None:
+                    live.record(
+                        result,
+                        age_ms=age_ms,
+                        captured=packet.sequence,
+                        dropped=frames.dropped_frames,
+                        queue_depth=frames.size,
+                    )
                 publish_metrics(
                     metrics,
                     dashboard,
                     result,
-                    time.monotonic() * 1000.0 - packet.captured_monotonic_ms,
+                    age_ms,
                     packet.sequence,
                     frames.dropped_frames,
                     config.pipeline_policy.pad_min_observations,
@@ -264,6 +287,28 @@ def run_camera(
     return exit_code
 
 
+def start_live_metrics(args):
+    """Start the opt-in loopback metrics server; a bind failure never blocks the runtime."""
+    if getattr(args, "metrics_port", None) is None:
+        return None, None
+    try:
+        targets = load_performance_targets(PROJECT_ROOT / "configs/performance_objective.yaml")
+    except (OSError, ValueError, AttributeError):
+        targets = {}
+    live = LiveMetricsHub(source="video" if args.video else "camera", targets=targets)
+    try:
+        server = LiveMetricsServer(
+            live,
+            port=args.metrics_port,
+            dashboard=PROJECT_ROOT / "reports/mlops_dashboard.html",
+        ).start()
+    except (OSError, ValueError) as exc:
+        print(f"live metrics unavailable: {exc}", file=sys.stderr)
+        return None, None
+    print(json.dumps({"event": "live_metrics_started", "url": server.url}), flush=True)
+    return live, server
+
+
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", type=Path, default=PROJECT_ROOT / "configs/runtime.yaml")
@@ -275,6 +320,12 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         "--metrics-ui",
         action="store_true",
         help="show a separate Tkinter runtime-metrics dashboard",
+    )
+    parser.add_argument(
+        "--metrics-port",
+        type=int,
+        help="serve live aggregate metrics and the MLOps dashboard on "
+        "http://127.0.0.1:PORT/ (loopback only; e.g. 8765)",
     )
     parser.add_argument(
         "--check-only",
@@ -307,6 +358,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         parser.error("--readiness-report requires --check-only")
     if args.metrics_ui and args.check_only:
         parser.error("--metrics-ui cannot be combined with --check-only")
+    if args.metrics_port is not None:
+        if args.check_only:
+            parser.error("--metrics-port cannot be combined with --check-only")
+        if not 1024 <= args.metrics_port <= 65535:
+            parser.error("--metrics-port must be within 1024-65535")
     return args
 
 
@@ -350,11 +406,14 @@ def main() -> int:
             print(f"metrics UI unavailable: {dashboard.error}", file=sys.stderr)
             dashboard.close()
             dashboard = None
+    live, live_server = start_live_metrics(args)
     capture = cv2.VideoCapture(str(args.video) if args.video else args.camera)
     if not capture.isOpened():
         capture.release()
         if dashboard is not None:
             dashboard.close()
+        if live_server is not None:
+            live_server.close()
         print("runtime startup blocked: unable to open video source", file=sys.stderr)
         return 2
     interrupted = False
@@ -368,6 +427,7 @@ def main() -> int:
                 metrics,
                 dashboard,
                 config.pipeline_policy.pad_min_observations,
+                live=live,
             )
         else:
             exit_code = run_camera(
@@ -380,6 +440,7 @@ def main() -> int:
                 camera_source=args.camera,
                 max_reconnect_attempts=args.max_reconnect_attempts,
                 reconnect_delay_s=args.reconnect_delay_s,
+                live=live,
             )
     except KeyboardInterrupt:
         interrupted = True
@@ -388,6 +449,8 @@ def main() -> int:
         capture.release()
         if dashboard is not None:
             dashboard.close()
+        if live_server is not None:
+            live_server.close()
         if not args.no_display:
             cv2.destroyAllWindows()
         print(json.dumps(verifier.end().event(), sort_keys=True))

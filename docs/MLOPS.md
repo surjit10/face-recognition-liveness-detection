@@ -8,7 +8,7 @@ This document outlines the Machine Learning Operations (MLOps) architecture, tra
 |---|---|---|
 | **Runtime Pinning** | `requirements-runtime.lock` | Fully pinned CPU runtime ensuring deterministic dependency resolution across machines. |
 | **Tooling Isolation** | `requirements-mlops.lock`, `.venv-mlops/` | DVC and MLflow run in an isolated environment so their dependency trees do not pollute runtime inference. |
-| **Automated Testing** | `tests/`, `.github/workflows/ci.yml` | 172 automated unit, contract, integration, and privacy tests run automatically on every push. |
+| **Automated Testing** | `tests/`, `.github/workflows/ci.yml` | 185 automated unit, contract, integration, and privacy tests run automatically on every push. |
 | **Continuous Integration** | [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) | Verifies clean installation, dependency compatibility (`pip check`), test suite execution, and security scans. |
 | **Biometric & Secret Scanner** | [`scripts/scan_artifacts.py`](../scripts/scan_artifacts.py) | Scans all tracked and staged files to prevent accidental leakage of raw faces, embeddings, model weights, or API keys. |
 | **Reproducible Evaluation (DVC)** | [`dvc.yaml`](../dvc.yaml), `dvc.lock`, [`scripts/verify_recognition_metrics.py`](../scripts/verify_recognition_metrics.py) | Three stages: `readiness` (hash-verified model/gallery load), `evaluate` (re-derives the validation threshold, the 612-point validation curve and validation/test metrics from private per-probe scores and fails on any drift from the committed reports or `configs/runtime.yaml`), and `scan`. `dvc.lock` pins the hash of every input, including the git-ignored score files, without publishing them. |
@@ -16,7 +16,8 @@ This document outlines the Machine Learning Operations (MLOps) architecture, tra
 | **Containerization** | [`Dockerfile`](../Dockerfile), `.dockerignore` | Minimal CPU runtime container image; pre-trained weights are mounted read-only at runtime rather than baked into layers. |
 | **Startup Integrity Checks** | `scripts/run_demo.py --check-only` | Verifies SHA-256 cryptographic fingerprints of models and gallery before the camera is ever engaged. |
 | **Runtime Benchmarking** | `scripts/benchmark_runtime.py` | Profiles real-world p95 latency, FPS, memory footprint, and frame queue drops on physical hardware. |
-| **Visual Dashboard** | [`reports/mlops_dashboard.html`](../reports/mlops_dashboard.html) | Static report of the 6-stage pipeline, benchmark results, recognition outcomes and audit receipts. Its threshold simulator reads the real validation curve; `tests/unit/test_dashboard_curve.py` keeps the two identical. |
+| **Visual Dashboard** | [`reports/mlops_dashboard.html`](../reports/mlops_dashboard.html) | Pipeline, benchmark, recognition outcomes and audit receipts. Opened from disk it shows the recorded benchmark; served by the runtime it shows live metrics. Its threshold simulator reads the real validation curve, and `tests/unit/test_dashboard_curve.py` keeps the curve and the recorded numbers identical to their source reports. |
+| **Live Runtime Metrics** | [`src/faceguard/live_metrics.py`](../src/faceguard/live_metrics.py), `--metrics-port` | Opt-in loopback HTTP endpoint (`/metrics.json`, Prometheus `/metrics`) fed by the inference loop; drives the dashboard's live mode. Aggregate counters only. |
 | **Gallery Lifecycle Management** | `src/faceguard/gallery_admin.py` | Atomic enrollment, duplicate prevention, verification, sidecar synchronization, and rollback. |
 | **Local Event Persistence** | `src/faceguard/checkins.py` | Private SQLite attendance database with daily deduplication, CSV export, and clear separation from raw frames. |
 
@@ -109,6 +110,41 @@ docker run --rm \
   faceguard-runtime:prototype --camera 0
 ```
 
+### 5. Live Runtime Metrics
+
+Both `run_demo.py` and the desktop app `run_app.py` accept `--metrics-port PORT`
+(1024-65535). The runtime then serves, on `127.0.0.1` only:
+
+| Path | Content |
+|---|---|
+| `/` | the MLOps dashboard, which polls `/metrics.json` every second |
+| `/metrics.json` | rolling-window FPS, p50/p95 model latency and capture-to-decision frame age, processed/captured/dropped frames, queue depth, current and peak RSS memory, frame counts per pipeline state and reason code, camera reconnects, 2-minute frame-age history, and the frozen targets |
+| `/metrics` | the same counters in Prometheus text format, ready for a Prometheus scraper and Grafana |
+| `/healthz` | liveness probe |
+
+```bash
+.venv/bin/python scripts/run_demo.py --camera 0 --metrics-port 8765
+# open http://127.0.0.1:8765/  or:  curl -s http://127.0.0.1:8765/metrics
+```
+
+Design choices:
+
+- **Same origin, no CORS.** The dashboard is served by the metrics server, so the
+  browser never needs an `Access-Control-Allow-Origin` header and other websites cannot
+  read the feed.
+- **DNS-rebinding guard.** Requests whose `Host` header is not a loopback name get 403.
+- **Never blocks inference.** The hub takes a short lock per frame; HTTP handling runs
+  on its own daemon threads. If the port is busy, the runtime starts without metrics.
+- **Same yardstick as the benchmark.** Live values are judged against
+  `configs/performance_objective.yaml`, and frame age is measured at the same point as
+  in the benchmark.
+- **Privacy.** Only timings, counters, state names and fixed reason codes are exposed.
+  Person IDs, similarity and PAD scores, track IDs, operator messages, frames and
+  embeddings are never recorded (`tests/unit/test_live_metrics.py`).
+
+Opened directly from disk, the dashboard falls back to the recorded 1 November 2026
+benchmark and labels every value as recorded.
+
 ## Architecture & Design Rationale
 
 - **Isolated `.venv-mlops`**: Keeps heavy experiment tracking tools (MLflow, DVC, SQLAlchemy) separate from the runtime camera application, ensuring that development dependencies never interfere with live inference.
@@ -121,11 +157,12 @@ docker run --rm \
 
 This is a single-machine academic prototype. The following are deliberately out of scope:
 
-- **No live production monitoring.** The dashboard is a static report of recorded runs. A
-  deployment would track, per site and per day: the distribution of top-1 similarity
-  scores (drift against the validation curve), the `UNKNOWN` and `POSSIBLE SPOOF` rates,
-  p95 capture-to-decision latency, dropped-frame ratio and camera reconnects, with
-  alerts when any of these leave their validation-time range.
+- **No fleet monitoring or alerting.** The live feed covers one local runtime and keeps
+  only a 2-minute window in memory. A deployment would scrape `/metrics` from every site
+  into Prometheus, keep history, and alert when p95 frame age, dropped-frame ratio,
+  camera reconnects or the `UNKNOWN` / `PAD_FAILED` rates leave their validation-time
+  range. Similarity-score drift would need a privacy-reviewed histogram metric, which is
+  deliberately not exported today.
 - **No training pipeline or model registry.** Detection and recognition use pretrained
   InsightFace models; the PAD model was trained once (see `reports/audits/pad_training_evidence.json`).
 - **No remote DVC or MLflow server.** Both stay local so biometric-derived files never

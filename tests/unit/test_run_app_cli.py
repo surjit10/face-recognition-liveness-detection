@@ -150,3 +150,11 @@ def test_app_delete_selected_attendance_requires_selection_and_confirmation(monk
     assert any("42" in msg for msg in confirms)
     assert "task_history_delete" in calls
 
+
+
+def test_app_metrics_port_is_opt_in_and_validated() -> None:
+    assert RUN_APP.parse_args([]).metrics_port is None
+    assert RUN_APP.parse_args(["--metrics-port", "8765"]).metrics_port == 8765
+    with pytest.raises(SystemExit):
+        RUN_APP.parse_args(["--metrics-port", "70000"])
+    assert RUN_APP.start_live_metrics(None) == (None, None)

@@ -121,6 +121,17 @@ metrics only; no frames or embeddings cross the process boundary. Closing the
 dashboard stops the session cleanly. Use `--no-display --metrics-ui` to run the
 dashboard without the OpenCV preview.
 
+For the live browser dashboard, add `--metrics-port 8765` (works with `run_demo.py`
+and the desktop app `run_app.py`), then open `http://127.0.0.1:8765/`:
+
+```bash
+.venv/bin/python scripts/run_demo.py --config configs/runtime.yaml --camera 0 --metrics-port 8765
+.venv/bin/python scripts/run_app.py --metrics-port 8765
+```
+
+The MLOps dashboard's speed cockpit then switches from the recorded benchmark to live
+values, updated every second. Details: [MLOPS.md](MLOPS.md#5-live-runtime-metrics).
+
 Presentation:
 
 - Sit front-facing, well lit, with one face at least `80 px` wide.

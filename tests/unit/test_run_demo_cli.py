@@ -43,3 +43,17 @@ def test_metrics_ui_rejects_check_only() -> None:
 
     assert result.returncode == 2
     assert "--metrics-ui cannot be combined" in result.stderr
+
+
+def test_metrics_port_rejects_privileged_port() -> None:
+    result = _run("--camera", "0", "--metrics-port", "80")
+
+    assert result.returncode == 2
+    assert "--metrics-port must be within 1024-65535" in result.stderr
+
+
+def test_metrics_port_rejects_check_only() -> None:
+    result = _run("--check-only", "--metrics-port", "8765")
+
+    assert result.returncode == 2
+    assert "--metrics-port cannot be combined with --check-only" in result.stderr

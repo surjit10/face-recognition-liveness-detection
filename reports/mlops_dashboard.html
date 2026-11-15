@@ -737,6 +737,48 @@
       color: var(--text-muted);
       background: rgba(10, 14, 23, 0.7);
     }
+
+    /* ---------- Narrow screens: let the header wrap instead of overflowing ---------- */
+    @media (max-width: 760px) {
+      .top-bar { flex-wrap: wrap; gap: 0.6rem; padding: 0.75rem 1rem; }
+      .top-actions { flex-wrap: wrap; gap: 0.5rem; }
+    }
+    .view-header code, .live-hint code { overflow-wrap: anywhere; }
+
+    /* ---------- Live runtime feed ---------- */
+    .status-badge.recorded { background: rgba(148, 163, 184, 0.1); border-color: rgba(148, 163, 184, 0.3); color: var(--text-secondary); }
+    .status-badge.recorded .live-dot { background-color: var(--text-muted); box-shadow: none; animation: none; }
+    .status-badge.stale { background: rgba(245, 158, 11, 0.1); border-color: rgba(245, 158, 11, 0.35); color: #fbbf24; }
+    .status-badge.stale .live-dot { background-color: var(--amber); box-shadow: none; animation: none; }
+    .source-caption { display: block; font-size: 0.72rem; color: var(--text-muted); margin-top: -0.35rem; margin-bottom: 0.6rem; }
+    .tag-failed { display: inline-flex; align-items: center; gap: 0.3rem; background: rgba(244, 63, 94, 0.15); border: 1px solid rgba(244, 63, 94, 0.35); color: #fb7185; font-weight: 700; font-size: 0.72rem; padding: 0.2rem 0.55rem; border-radius: 6px; text-transform: uppercase; letter-spacing: 0.04em; }
+    .live-panel { margin-bottom: 1.5rem; }
+    .live-panel:hover { transform: none; }
+    .live-hint { font-size: 0.85rem; color: var(--text-secondary); }
+    .live-hint code { font-family: var(--font-mono); font-size: 0.8rem; color: #93c5fd; }
+    .live-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 0.75rem; margin: 1rem 0; }
+    .live-stat { background: var(--bg-subtle); border: 1px solid var(--border-subtle); border-radius: 10px; padding: 0.6rem 0.75rem; min-width: 0; }
+    .live-stat .hw-label { display: block; font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+    .live-stat strong { display: block; font-size: 1.05rem; color: var(--text-primary); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+    .live-chart-wrap { position: relative; }
+    .live-chart-title { font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.4rem; }
+    #liveChart { display: block; width: 100%; height: 220px; touch-action: none; }
+    #liveChart .grid line { stroke: rgba(255, 255, 255, 0.06); stroke-width: 1; }
+    #liveChart .axis text { fill: var(--text-muted); font-size: 11px; font-family: var(--font-sans); font-variant-numeric: tabular-nums; }
+    #liveChart .target { stroke: #fbbf24; stroke-width: 1.5; stroke-dasharray: 5 4; }
+    #liveChart .target-label { fill: #fbbf24; font-size: 11px; font-family: var(--font-sans); }
+    #liveChart .series { fill: none; stroke: #38bdf8; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+    #liveChart .crosshair { stroke: rgba(255, 255, 255, 0.35); stroke-width: 1; }
+    #liveChart .hover-dot { fill: #38bdf8; stroke: var(--bg-surface); stroke-width: 2; }
+    .live-tooltip { position: absolute; pointer-events: none; background: #0b1220; border: 1px solid var(--border-subtle); border-radius: 8px; padding: 0.4rem 0.6rem; font-size: 0.75rem; color: var(--text-primary); white-space: nowrap; box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45); font-variant-numeric: tabular-nums; }
+    .live-tooltip span { color: var(--text-secondary); }
+    .live-states { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.9rem; }
+    .state-chip { font-size: 0.75rem; padding: 0.25rem 0.6rem; border-radius: 999px; border: 1px solid var(--border-subtle); background: var(--bg-subtle); color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+    .state-chip b { color: var(--text-primary); font-weight: 700; }
+    .state-chip.good { border-color: rgba(16, 185, 129, 0.35); }
+    .state-chip.warn { border-color: rgba(245, 158, 11, 0.4); }
+    .state-chip.bad { border-color: rgba(244, 63, 94, 0.45); }
+    .live-privacy { font-size: 0.72rem; color: var(--text-muted); margin-top: 0.8rem; }
   </style>
 </head>
 <body>
@@ -752,9 +794,9 @@
         </div>
       </div>
       <div class="top-actions">
-        <div class="status-badge">
+        <div class="status-badge recorded" id="runtimeBadge" title="Data source for the speed cockpit">
           <span class="live-dot"></span>
-          <span>Target CPU Runtime: Passed</span>
+          <span id="runtimeBadgeText">Recorded benchmark · 1 Nov 2026 · passed</span>
         </div>
         <button class="btn-toggle" id="toggleModeBtn" onclick="toggleMode()">
           <span>💡</span>
@@ -790,7 +832,7 @@
     <div class="helper-banner" id="infoBanner">
       <span class="helper-icon">💡</span>
       <div id="infoText">
-        <strong>Audited Performance Receipts:</strong> Every value below is generated from verified system benchmarks and test splits on your Intel Core i5 laptop and camera. All target objectives passed with zero camera read failures.
+        <strong>Audited Performance Receipts:</strong> Values marked <em>Recorded</em> come from verified benchmarks and test splits on the target Intel Core i5 laptop and camera, where every target passed with zero camera read failures. Values marked <em>Live</em> come from the runtime currently serving this page.
       </div>
     </div>
 
@@ -798,7 +840,39 @@
     <section id="tab-cockpit" class="tab-view active">
       <div class="view-header">
         <h2>🚀 Speed & Hardware Cockpit</h2>
-        <p>Real-time throughput, latency, memory utilization, and verification speed measured on target hardware on 1 November 2026 (<code>reports/benchmarks/prototype_camera.json</code>). The 14 November changes add no model inference, so this was not re-measured.</p>
+        <p id="cockpitSubtitle">Real-time throughput, latency, memory utilization, and verification speed measured on target hardware on 1 November 2026 (<code>reports/benchmarks/prototype_camera.json</code>). The 14 November changes add no model inference, so this was not re-measured.</p>
+      </div>
+
+      <!-- Live runtime feed (polls /metrics.json when served by run_demo/run_app --metrics-port) -->
+      <div class="card live-panel" id="livePanel">
+        <div class="card-top">
+          <span class="card-title">Live Runtime Feed</span>
+          <span class="tag-passed" id="livePill" style="color: var(--text-secondary); background: var(--bg-subtle); border-color: var(--border-subtle);">Recorded</span>
+        </div>
+        <p class="live-hint" id="liveHint">
+          Showing the recorded benchmark. For live numbers, start the runtime with
+          <code>--metrics-port 8765</code> (for example <code>.venv/bin/python scripts/run_demo.py --camera 0 --metrics-port 8765</code>)
+          and open <code>http://127.0.0.1:8765/</code>. The cards below then update every second.
+        </p>
+        <div id="liveBody" hidden>
+          <div class="live-stats">
+            <div class="live-stat"><span class="hw-label">Source</span><strong id="liveSource">–</strong></div>
+            <div class="live-stat"><span class="hw-label">Pipeline state</span><strong id="liveState">–</strong></div>
+            <div class="live-stat"><span class="hw-label">Processed / captured</span><strong id="liveFrames">–</strong></div>
+            <div class="live-stat"><span class="hw-label">Stale frames dropped</span><strong id="liveDropped">–</strong></div>
+            <div class="live-stat"><span class="hw-label">p50 model latency</span><strong id="liveLatency">–</strong></div>
+            <div class="live-stat"><span class="hw-label">Memory (RSS now)</span><strong id="liveRss">–</strong></div>
+            <div class="live-stat"><span class="hw-label">Camera reconnects</span><strong id="liveReconnects">–</strong></div>
+            <div class="live-stat"><span class="hw-label">Uptime</span><strong id="liveUptime">–</strong></div>
+          </div>
+          <div class="live-chart-wrap" id="liveChartWrap">
+            <div class="live-chart-title">Capture-to-decision frame age per processed frame (ms), last 2 minutes</div>
+            <svg id="liveChart" role="img" aria-label="Frame age over the last two minutes"></svg>
+            <div class="live-tooltip" id="liveTooltip" hidden></div>
+          </div>
+          <div class="live-states" id="liveStates" aria-label="Processed frames by pipeline state"></div>
+          <p class="live-privacy">Aggregate timings and counters only, served on 127.0.0.1. No names, IDs, similarity scores, frames or embeddings leave the runtime.</p>
+        </div>
       </div>
 
       <!-- 4 Core Performance Cards -->
@@ -810,13 +884,14 @@
             <div class="card-icon-box">⚡</div>
           </div>
           <div class="metric-hero" style="color: #34d399;">
-            6.52 <span class="metric-unit">FPS</span>
+            <span id="fpsValue">6.52</span> <span class="metric-unit">FPS</span>
           </div>
+          <span class="source-caption" id="fpsCaption">Recorded 1 Nov 2026</span>
           <div class="meter-track">
-            <div class="meter-fill emerald" style="width: 100%;"></div>
+            <div class="meter-fill emerald" id="fpsMeter" style="width: 100%;"></div>
           </div>
           <div class="card-footer">
-            <span class="tag-passed">✓ PASSED</span>
+            <span class="tag-passed" id="fpsTag">✓ PASSED</span>
             <span class="target-desc">Target: ≥ 5.0 FPS</span>
           </div>
         </div>
@@ -824,17 +899,18 @@
         <!-- Metric 2: Latency -->
         <div class="card">
           <div class="card-top">
-            <span class="card-title">P95 Latency (Total)</span>
+            <span class="card-title">P95 Capture-to-Decision</span>
             <div class="card-icon-box">⏱️</div>
           </div>
           <div class="metric-hero" style="color: #38bdf8;">
-            285.6 <span class="metric-unit">ms</span>
+            <span id="p95Value">285.6</span> <span class="metric-unit">ms</span>
           </div>
+          <span class="source-caption" id="p95Caption">Recorded 1 Nov 2026</span>
           <div class="meter-track">
-            <div class="meter-fill" style="width: 57%;"></div>
+            <div class="meter-fill" id="p95Meter" style="width: 57%;"></div>
           </div>
           <div class="card-footer">
-            <span class="tag-passed">✓ PASSED</span>
+            <span class="tag-passed" id="p95Tag">✓ PASSED</span>
             <span class="target-desc">Target: ≤ 500.0 ms</span>
           </div>
         </div>
@@ -846,13 +922,14 @@
             <div class="card-icon-box">💾</div>
           </div>
           <div class="metric-hero" style="color: #a78bfa;">
-            644.2 <span class="metric-unit">MB</span>
+            <span id="memValue">644.2</span> <span class="metric-unit">MB</span>
           </div>
+          <span class="source-caption" id="memCaption">Recorded 1 Nov 2026</span>
           <div class="meter-track">
-            <div class="meter-fill" style="width: 85%;"></div>
+            <div class="meter-fill" id="memMeter" style="width: 85%;"></div>
           </div>
           <div class="card-footer">
-            <span class="tag-passed">✓ PASSED</span>
+            <span class="tag-passed" id="memTag">✓ PASSED</span>
             <span class="target-desc">Limit: ≤ 750.0 MB</span>
           </div>
         </div>
@@ -866,6 +943,7 @@
           <div class="metric-hero" style="color: #fbbf24;">
             1.34 <span class="metric-unit">sec</span>
           </div>
+          <span class="source-caption">Recorded 1 Nov 2026 (not measured live)</span>
           <div class="meter-track">
             <div class="meter-fill amber" style="width: 44%;"></div>
           </div>
@@ -1220,7 +1298,7 @@
             <span class="card-title">Automated Tests</span>
             <div class="card-icon-box">🧪</div>
           </div>
-          <div class="metric-hero" style="color: #38bdf8;">172 / 172</div>
+          <div class="metric-hero" style="color: #38bdf8;">185 / 185</div>
           <div class="target-desc">Pytest unit, contract and integration tests passing (15 Nov 2026)</div>
         </div>
 
@@ -1229,7 +1307,7 @@
             <span class="card-title">Privacy Scanner</span>
             <div class="card-icon-box">🛡️</div>
           </div>
-          <div class="metric-hero" style="color: #a78bfa;">169 Files</div>
+          <div class="metric-hero" style="color: #a78bfa;">171 Files</div>
           <div class="target-desc">0 biometric leaks, 0 secret keys</div>
         </div>
 
@@ -1445,6 +1523,202 @@
       handleSliderChange(FROZEN_THRESHOLD);
     }
 
+    // ---------------- Live runtime feed ----------------
+    // Same-origin polling of /metrics.json served by run_demo.py / run_app.py --metrics-port.
+    // Opened from disk (file://) or from a plain static server, the page keeps the recorded values.
+    const LIVE = { connected: false, everConnected: false, failures: 0, history: [], target: 500 };
+    const STATE_TONE = { IDENTIFIED: 'good', PAD_PASSED: 'good', UNKNOWN: 'warn', PAD_FAILED: 'bad', RETRY: 'warn' };
+    const fmt = (v, d = 1) => (v === null || v === undefined || Number.isNaN(v)) ? '–' : Number(v).toFixed(d);
+    const setText = (id, text) => { const el = document.getElementById(id); if (el) el.textContent = text; };
+
+    function setBadge(mode, text) {
+      const badge = document.getElementById('runtimeBadge');
+      badge.classList.remove('recorded', 'stale');
+      if (mode !== 'live') badge.classList.add(mode);
+      setText('runtimeBadgeText', text);
+    }
+
+    function setPill(text, tone) {
+      const pill = document.getElementById('livePill');
+      pill.textContent = text;
+      const tones = {
+        live: ['#34d399', 'rgba(16, 185, 129, 0.15)', 'rgba(16, 185, 129, 0.3)'],
+        stale: ['#fbbf24', 'rgba(245, 158, 11, 0.12)', 'rgba(245, 158, 11, 0.35)'],
+        idle: ['var(--text-secondary)', 'var(--bg-subtle)', 'var(--border-subtle)'],
+      }[tone];
+      pill.style.color = tones[0]; pill.style.background = tones[1]; pill.style.borderColor = tones[2];
+    }
+
+    // higherIsBetter: FPS. Otherwise the value must stay at or below the target.
+    function setGauge(prefix, value, target, digits, higherIsBetter, caption) {
+      setText(prefix + 'Value', fmt(value, digits));
+      setText(prefix + 'Caption', caption);
+      const meter = document.getElementById(prefix + 'Meter');
+      const tag = document.getElementById(prefix + 'Tag');
+      if (value === null || value === undefined || !target) {
+        meter.style.width = '0%';
+        tag.className = 'tag-passed'; tag.textContent = '… WAITING';
+        return;
+      }
+      meter.style.width = Math.max(2, Math.min(100, (value / target) * 100)).toFixed(0) + '%';
+      const ok = higherIsBetter ? value >= target : value <= target;
+      tag.className = ok ? 'tag-passed' : 'tag-failed';
+      tag.textContent = ok ? '✓ OK' : '✗ MISS';
+    }
+
+    function renderStates(counts, total) {
+      const box = document.getElementById('liveStates');
+      box.replaceChildren();
+      Object.entries(counts).sort((a, b) => b[1] - a[1]).forEach(([state, count]) => {
+        const chip = document.createElement('span');
+        chip.className = 'state-chip ' + (STATE_TONE[state] || '');
+        const label = document.createElement('b');
+        label.textContent = state.replace(/_/g, ' ');
+        chip.append(label, ` ${count} (${total ? (100 * count / total).toFixed(0) : 0}%)`);
+        box.append(chip);
+      });
+    }
+
+    function svgEl(tag, attrs) {
+      const el = document.createElementNS('http://www.w3.org/2000/svg', tag);
+      for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v);
+      return el;
+    }
+
+    // Single-series line chart of frame age with the frozen p95 target as a dashed reference.
+    function renderChart() {
+      const svg = document.getElementById('liveChart');
+      const W = Math.max(280, svg.clientWidth || 600), H = 220;
+      const m = { l: 44, r: 12, t: 10, b: 24 };
+      svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+      svg.replaceChildren();
+      const pts = LIVE.history;
+      const tMax = pts.length ? pts[pts.length - 1][0] : 120;
+      const tMin = Math.max(0, tMax - 120);
+      const yMax = Math.max(LIVE.target * 1.2, ...pts.map(p => p[2])) || 600;
+      const step = yMax > 1500 ? 500 : yMax > 600 ? 200 : 100;
+      const x = s => m.l + (W - m.l - m.r) * (tMax === tMin ? 1 : (s - tMin) / (tMax - tMin));
+      const y = v => H - m.b - (H - m.t - m.b) * (v / yMax);
+      const grid = svgEl('g', { class: 'grid' }), axis = svgEl('g', { class: 'axis' });
+      for (let v = 0; v <= yMax; v += step) {
+        grid.append(svgEl('line', { x1: m.l, x2: W - m.r, y1: y(v), y2: y(v) }));
+        const label = svgEl('text', { x: m.l - 6, y: y(v) + 4, 'text-anchor': 'end' });
+        label.textContent = v;
+        axis.append(label);
+      }
+      [tMin, (tMin + tMax) / 2, tMax].forEach((s, i) => {
+        const label = svgEl('text', { x: x(s), y: H - 6, 'text-anchor': ['start', 'middle', 'end'][i] });
+        label.textContent = `${s.toFixed(0)} s`;
+        axis.append(label);
+      });
+      svg.append(grid, axis);
+      svg.append(svgEl('line', { class: 'target', x1: m.l, x2: W - m.r, y1: y(LIVE.target), y2: y(LIVE.target) }));
+      const tLabel = svgEl('text', { class: 'target-label', x: W - m.r - 4, y: y(LIVE.target) - 5, 'text-anchor': 'end' });
+      tLabel.textContent = `p95 target ${LIVE.target} ms`;
+      svg.append(tLabel);
+      if (pts.length > 1) {
+        svg.append(svgEl('polyline', { class: 'series', points: pts.map(p => `${x(p[0]).toFixed(1)},${y(p[2]).toFixed(1)}`).join(' ') }));
+      }
+      const cross = svgEl('line', { class: 'crosshair', y1: m.t, y2: H - m.b, visibility: 'hidden' });
+      const dot = svgEl('circle', { class: 'hover-dot', r: 4, visibility: 'hidden' });
+      svg.append(cross, dot);
+      LIVE.scale = { x, y, cross, dot, m, W };
+    }
+
+    function handleChartHover(evt) {
+      const tip = document.getElementById('liveTooltip');
+      const s = LIVE.scale, pts = LIVE.history;
+      if (!s || pts.length === 0) return;
+      const rect = evt.currentTarget.getBoundingClientRect();
+      const px = (evt.clientX - rect.left) * (s.W / rect.width);
+      let best = pts[0];
+      for (const p of pts) if (Math.abs(s.x(p[0]) - px) < Math.abs(s.x(best[0]) - px)) best = p;
+      const bx = s.x(best[0]), by = s.y(best[2]);
+      s.cross.setAttribute('x1', bx); s.cross.setAttribute('x2', bx); s.cross.setAttribute('visibility', 'visible');
+      s.dot.setAttribute('cx', bx); s.dot.setAttribute('cy', by); s.dot.setAttribute('visibility', 'visible');
+      tip.replaceChildren();
+      const lines = [[`${best[0].toFixed(1)} s`, ''], ['frame age ', `${best[2].toFixed(0)} ms`], ['model latency ', `${best[1].toFixed(0)} ms`]];
+      lines.forEach(([a, b], i) => {
+        if (i) tip.append(document.createElement('br'));
+        const label = document.createElement('span'); label.textContent = a;
+        tip.append(label, b);
+      });
+      tip.hidden = false;
+      const left = (bx / s.W) * rect.width;
+      tip.style.left = Math.min(rect.width - 140, Math.max(0, left + 10)) + 'px';
+      tip.style.top = '28px';
+    }
+
+    function hideChartHover() {
+      document.getElementById('liveTooltip').hidden = true;
+      if (LIVE.scale) { LIVE.scale.cross.setAttribute('visibility', 'hidden'); LIVE.scale.dot.setAttribute('visibility', 'hidden'); }
+    }
+
+    function renderLive(s) {
+      const t = s.targets || {};
+      LIVE.target = t.max_p95_frame_age_ms || 500;
+      LIVE.history = s.history || [];
+      document.getElementById('liveHint').hidden = true;
+      document.getElementById('liveBody').hidden = false;
+      const sourceLabel = { camera: 'run_demo · camera', video: 'run_demo · video file', desktop: 'desktop app · camera 0' }[s.source] || s.source;
+      const waiting = s.frames.processed === 0;
+      const quiet = !waiting && s.seconds_since_last_frame !== null && s.seconds_since_last_frame > 3;
+      if (waiting) {
+        setBadge('stale', 'Live · waiting for frames'); setPill('Live · waiting', 'stale');
+      } else if (quiet) {
+        setBadge('stale', `Live · no frames for ${s.seconds_since_last_frame.toFixed(0)} s`); setPill('Live · idle', 'stale');
+      } else {
+        setBadge('live', `Live · ${sourceLabel}`); setPill('Live', 'live');
+      }
+      setText('cockpitSubtitle', 'Live values from the running runtime, judged against the frozen targets in configs/performance_objective.yaml. Verification speed and the stage breakdown below remain the recorded 1 November 2026 benchmark.');
+      setText('liveSource', sourceLabel);
+      setText('liveState', s.pipeline.state ? s.pipeline.state.replace(/_/g, ' ') : '–');
+      setText('liveFrames', `${s.frames.processed} / ${s.frames.captured}`);
+      setText('liveDropped', `${s.frames.dropped} (${(100 * s.frames.drop_ratio).toFixed(0)}%)`);
+      setText('liveLatency', `${fmt(s.window.latency_ms_p50, 0)} ms`);
+      setText('liveRss', `${fmt(s.memory_mb.rss)} MB`);
+      setText('liveReconnects', String((s.events || {}).camera_reconnected || 0));
+      setText('liveUptime', `${fmt(s.uptime_s, 0)} s`);
+      const caption = `Live · rolling ${s.window.frames} frames`;
+      setGauge('fps', waiting ? null : s.window.fps, t.min_fps, 2, true, caption);
+      setGauge('p95', waiting ? null : s.window.frame_age_ms_p95, t.max_p95_frame_age_ms, 1, false,
+        s.source === 'video' ? caption + ' · video: no capture queue' : caption);
+      setGauge('mem', s.memory_mb.peak_rss, t.max_peak_memory_mb, 1, false, 'Live · process peak RSS');
+      renderStates(s.pipeline.state_counts, s.frames.processed);
+      renderChart();
+    }
+
+    async function pollLive() {
+      try {
+        const response = await fetch('/metrics.json', { cache: 'no-store' });
+        if (!response.ok) throw new Error(String(response.status));
+        const snapshot = await response.json();
+        if (snapshot.schema_version !== 1) throw new Error('unsupported schema');
+        LIVE.connected = LIVE.everConnected = true;
+        LIVE.failures = 0;
+        renderLive(snapshot);
+      } catch (err) {
+        LIVE.failures += 1;
+        LIVE.connected = false;
+        if (LIVE.everConnected) {
+          setBadge('stale', 'Live feed lost · showing last values');
+          setPill('Disconnected · retrying', 'stale');
+        }
+      } finally {
+        // Back off when nothing is serving metrics, so a static server is not hammered.
+        const delay = LIVE.everConnected ? (LIVE.connected ? 1000 : 3000) : (LIVE.failures < 3 ? 2000 : 15000);
+        setTimeout(pollLive, delay);
+      }
+    }
+
+    function initLive() {
+      const svg = document.getElementById('liveChart');
+      svg.addEventListener('pointermove', handleChartHover);
+      svg.addEventListener('pointerleave', hideChartHover);
+      window.addEventListener('resize', () => { if (LIVE.everConnected) renderChart(); });
+      if (location.protocol === 'http:' || location.protocol === 'https:') pollLive();
+    }
+
     function toggleMode() {
       isSimpleMode = !isSimpleMode;
       const text = document.getElementById('modeText');
@@ -1455,13 +1729,14 @@
         info.innerHTML = `<strong>Simple Explanation Mode:</strong> Think of FaceGuard like a high-tech building security guard. When you step in front of the camera, it first checks for signs that the face is a phone screen or a photo (this check is not foolproof). Next, it measures your face's unique structure, matches it against enrolled employees, and checks you in. The gauges below show each camera frame is processed in under 0.3 seconds (p95) on a laptop CPU.`;
       } else {
         text.textContent = "Beginner Explanations";
-        info.innerHTML = `<strong>Audited Performance Receipts:</strong> Every value below is generated from verified system benchmarks and test splits on your Intel Core i5 laptop and camera. All target objectives passed with zero camera read failures.`;
+        info.innerHTML = `<strong>Audited Performance Receipts:</strong> Values marked <em>Recorded</em> come from verified benchmarks and test splits on the target Intel Core i5 laptop and camera, where every target passed with zero camera read failures. Values marked <em>Live</em> come from the runtime currently serving this page.`;
       }
     }
 
     // Initialize first node on load
     inspectNode('cam');
     resetSlider();
+    initLive();
   </script>
 </body>
 </html>

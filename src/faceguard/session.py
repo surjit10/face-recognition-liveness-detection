@@ -94,6 +94,7 @@ class VerificationSession:
         options: SessionOptions | None = None,
         capture_factory: CaptureFactory = cv2.VideoCapture,
         event_sink: EventSink | None = None,
+        metrics_hub: Any | None = None,
     ) -> None:
         self.verifier = verifier
         self.config = config
@@ -101,6 +102,7 @@ class VerificationSession:
         self.options.validate()
         self._capture_factory = capture_factory
         self._event_sink = event_sink
+        self._metrics_hub = metrics_hub
         self._lock = threading.Lock()
         self._capture_lock = threading.Lock()
         self._verifier_lock = threading.Lock()
@@ -163,6 +165,8 @@ class VerificationSession:
         with self._verifier_lock:
             self.verifier.reset()
         self._initialize_transports()
+        if self._metrics_hub is not None:
+            self._metrics_hub.reset()  # counters are per camera session, like SessionMetrics
         with self._lock:
             self._captured = 0
             self._error = None
@@ -232,6 +236,7 @@ class VerificationSession:
 
                 with self._verifier_lock:
                     self.verifier.reset()
+                self._note_event("camera_disconnected")
                 self._set_status(SessionStatus.RECONNECTING)
                 self._release_capture()
                 capture = None
@@ -243,6 +248,7 @@ class VerificationSession:
                         failures = 0
                         with self._verifier_lock:
                             self.verifier.reset()
+                        self._note_event("camera_reconnected")
                         self._set_status(SessionStatus.RUNNING)
                         break
                 if capture is None:
@@ -281,6 +287,16 @@ class VerificationSession:
                         time.monotonic() * 1000.0 - packet.captured_monotonic_ms,
                     )
                     self._metrics.add(result.latency_ms, age_ms)
+                    if self._metrics_hub is not None:
+                        with self._lock:
+                            captured = self._captured
+                        self._metrics_hub.record(
+                            result,
+                            age_ms=age_ms,
+                            captured=captured,
+                            dropped=self._frames.dropped_frames,
+                            queue_depth=self._frames.size,
+                        )
                     snapshot = UiSnapshot(
                         sequence=packet.sequence,
                         frame_bgr=packet.frame_bgr,
@@ -308,6 +324,10 @@ class VerificationSession:
                 self._set_status(SessionStatus.STOPPED)
             elif self.status == SessionStatus.STOPPING:
                 self._set_status(SessionStatus.STOPPED)
+
+    def _note_event(self, name: str) -> None:
+        if self._metrics_hub is not None:
+            self._metrics_hub.note_event(name)
 
     def _metrics_snapshot(self) -> SessionMetrics:
         with self._lock:

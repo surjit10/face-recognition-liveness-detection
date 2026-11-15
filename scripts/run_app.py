@@ -22,6 +22,11 @@ warnings.filterwarnings(
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_ROOT / "src"))
 
+from faceguard.live_metrics import (  # noqa: E402
+    LiveMetricsHub,
+    LiveMetricsServer,
+    load_performance_targets,
+)
 from faceguard.ui import DesktopApp  # noqa: E402
 
 
@@ -60,7 +65,36 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         default=PROJECT_ROOT / "configs/private/operator.yaml",
         help="optional Git-ignored operator PIN configuration",
     )
-    return parser.parse_args(argv)
+    parser.add_argument(
+        "--metrics-port",
+        type=int,
+        help="serve live aggregate metrics and the MLOps dashboard on "
+        "http://127.0.0.1:PORT/ (loopback only; e.g. 8765)",
+    )
+    args = parser.parse_args(argv)
+    if args.metrics_port is not None and not 1024 <= args.metrics_port <= 65535:
+        parser.error("--metrics-port must be within 1024-65535")
+    return args
+
+
+def start_live_metrics(port: int | None):
+    """Start the opt-in loopback metrics server; failure never blocks the desktop app."""
+    if port is None:
+        return None, None
+    try:
+        targets = load_performance_targets(PROJECT_ROOT / "configs/performance_objective.yaml")
+    except (OSError, ValueError, AttributeError):
+        targets = {}
+    hub = LiveMetricsHub(source="desktop", targets=targets)
+    try:
+        server = LiveMetricsServer(
+            hub, port=port, dashboard=PROJECT_ROOT / "reports/mlops_dashboard.html"
+        ).start()
+    except (OSError, ValueError) as exc:
+        print(f"live metrics unavailable: {exc}", file=sys.stderr)
+        return None, None
+    print(f"live metrics: {server.url}", flush=True)
+    return hub, server
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -70,6 +104,7 @@ def main(argv: list[str] | None = None) -> int:
     except tk.TclError as exc:
         print(f"desktop startup blocked: {exc}", file=sys.stderr)
         return 2
+    hub, server = start_live_metrics(args.metrics_port)
     try:
         app = DesktopApp(
             root,
@@ -79,6 +114,7 @@ def main(argv: list[str] | None = None) -> int:
             identity_labels_path=args.identity_labels,
             history_db_path=args.history_db,
             operator_config_path=args.operator_config,
+            metrics_hub=hub,
         )
         signal.signal(signal.SIGINT, lambda *_args: root.after(0, app.close))
         return app.run()
@@ -86,6 +122,9 @@ def main(argv: list[str] | None = None) -> int:
         root.destroy()
         print(f"desktop startup blocked: {exc}", file=sys.stderr)
         return 2
+    finally:
+        if server is not None:
+            server.close()
 
 
 if __name__ == "__main__":

@@ -45,6 +45,7 @@ class DesktopApp:
         identity_labels_path: Path | None = None,
         history_db_path: Path | None = None,
         operator_config_path: Path | None = None,
+        metrics_hub=None,
     ) -> None:
         if camera_index != 0:
             raise ValueError("Only authorized camera 0 is supported")
@@ -52,6 +53,7 @@ class DesktopApp:
         self.config_path = config_path
         self.project_root = project_root
         self.camera_index = camera_index
+        self.metrics_hub = metrics_hub
         self.identity_labels = load_identity_labels(identity_labels_path)
         self.operator_auth = load_operator_auth(operator_config_path)
         self._operator_unlocked = not self.operator_auth.enabled
@@ -353,6 +355,7 @@ class DesktopApp:
             verifier=self._bundle.verifier,
             config=self._bundle.config,
             options=SessionOptions(camera_index=self.camera_index),
+            metrics_hub=self.metrics_hub,
         )
         self._session_mode = mode
         self._latest_snapshot = None

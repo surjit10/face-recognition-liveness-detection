@@ -16,17 +16,17 @@ stages:
       nfiles: 6
     - path: scripts/run_demo.py
       hash: md5
-      md5: cc067d5aa603659db80bcdb0b31ccf39
-      size: 14686
+      md5: ec5a688a6da16280bee0513710e9eade
+      size: 17258
     - path: src/faceguard
       hash: md5
-      md5: 03c5dc7ad2982381dc4eb77bf72efe64.dir
-      size: 312185
-      nfiles: 29
+      md5: f8f430f3b9150d10d3ac9609cb2ecbcb.dir
+      size: 328446
+      nfiles: 30
     outs:
     - path: reports/environments/runtime_readiness.json
       hash: md5
-      md5: 3437570d873e898706dfc83e79ecc8c2
+      md5: fcf4ba89be3f43f78fc2dc1bc97040f4
       size: 762
   scan:
     cmd: .venv/bin/python scripts/scan_artifacts.py > 
@@ -43,7 +43,7 @@ stages:
     outs:
     - path: reports/phase_receipts/artifact_scan.txt
       hash: md5
-      md5: 902ccf4e918ad4d61ad2ce5d1aa5764f
+      md5: ecb8c8ee36c19930e59abf5bc702e1b3
       size: 55
   evaluate:
     cmd: .venv/bin/python scripts/verify_recognition_metrics.py
